@@ -71,7 +71,6 @@ func parseGoFile(filePath string) (string, error) {
 			builder.WriteString("import " + x.Path.Value + "\n")
 		case *ast.FuncDecl:
 			builder.WriteString(formatFunctionSignature(fset, x) + "\n")
-			// builder.WriteString(x.Name.Name + "\n")
 		case *ast.GenDecl:
 			if x.Tok == token.TYPE {
 				for _, spec := range x.Specs {
