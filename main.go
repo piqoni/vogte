@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
 func main() {
@@ -21,6 +23,7 @@ func main() {
 	dir := *dirPtr
 
 	outputFile := *outputPtr
+	modulePath := ""
 
 	// Collect Go file structures
 	var result strings.Builder
@@ -29,9 +32,13 @@ func main() {
 			return err
 		}
 
+		if !info.IsDir() && strings.HasSuffix(path, "go.mod") {
+			modulePath = getModulePath(path)
+		}
+
 		// Parse Go files
 		if !info.IsDir() && strings.HasSuffix(path, ".go") {
-			fileContent, err := parseGoFile(path)
+			fileContent, err := parseGoFile(path, modulePath)
 			if err != nil {
 				return fmt.Errorf("error parsing file %s: %w", path, err)
 			}
@@ -55,7 +62,7 @@ func main() {
 	fmt.Printf("Output written to %s\n", outputFile)
 }
 
-func parseGoFile(filePath string) (string, error) {
+func parseGoFile(filePath, modulePath string) (string, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
 
@@ -68,7 +75,10 @@ func parseGoFile(filePath string) (string, error) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.ImportSpec:
-			builder.WriteString("import " + x.Path.Value + "\n")
+			// Collect only internal imports for now
+			if modulePath != "" && strings.Contains(x.Path.Value, modulePath) {
+				builder.WriteString("import " + x.Path.Value + "\n")
+			}
 		case *ast.FuncDecl:
 			builder.WriteString(formatFunctionSignature(fset, x) + "\n")
 		case *ast.GenDecl:
@@ -124,4 +134,19 @@ func formatNode(fset *token.FileSet, node ast.Node) string {
 	var buf strings.Builder
 	printer.Fprint(&buf, fset, node)
 	return buf.String()
+}
+
+func getModulePath(filePath string) string {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+
+	// Maybe modfile is overkill
+	modFile, err := modfile.Parse(filePath, data, nil)
+	if err != nil {
+		return ""
+	}
+
+	return modFile.Module.Mod.Path
 }
