@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -9,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"golang.org/x/mod/modfile"
@@ -30,6 +32,17 @@ func main() {
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(path, ".proto") {
+			fileContent, err := parseProtoFile(path)
+			if err != nil {
+				return fmt.Errorf("error parsing file %s: %w", path, err)
+			}
+			relativePath := strings.TrimPrefix(path, dir)
+			relativePath = strings.TrimPrefix(relativePath, "/")
+			result.WriteString("file: " + relativePath + "\n")
+			result.WriteString(fileContent + "\n")
 		}
 
 		if !info.IsDir() && strings.HasSuffix(path, "go.mod") {
@@ -60,6 +73,42 @@ func main() {
 	}
 
 	fmt.Printf("Output written to %s\n", outputFile)
+}
+
+// Get a list of Messages for now
+func parseProtoFile(filepath string) (string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	var messages []string
+	scanner := bufio.NewScanner(file)
+
+	messageRegex := regexp.MustCompile(`^\s*message\s+(\w+)\s*{`)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// skip comments
+		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") {
+			continue
+		}
+
+		matches := messageRegex.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			messageName := "message " + matches[1]
+			messages = append(messages, messageName)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading file: %w", err)
+	}
+
+	result := strings.Join(messages, "\n")
+	return result, nil
 }
 
 func parseGoFile(filePath, modulePath string) (string, error) {
