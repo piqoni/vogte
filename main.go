@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -10,9 +9,9 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
+	"github.com/emicklei/proto"
 	"golang.org/x/mod/modfile"
 )
 
@@ -75,39 +74,25 @@ func main() {
 	fmt.Printf("Output written to %s\n", outputFile)
 }
 
-// Get a list of Messages for now
+// Extract from proto files messages and services names
 func parseProtoFile(filepath string) (string, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
+	reader, _ := os.Open(filepath)
+	defer reader.Close()
 
-	var messages []string
-	scanner := bufio.NewScanner(file)
+	parser := proto.NewParser(reader)
+	definition, _ := parser.Parse()
 
-	messageRegex := regexp.MustCompile(`^\s*message\s+(\w+)\s*{`)
+	var content []string
+	proto.Walk(definition,
+		proto.WithMessage(func(m *proto.Message) {
+			content = append(content, "message "+m.Name)
+		}),
+		proto.WithService(func(s *proto.Service) {
+			content = append(content, "service "+s.Name)
+		}),
+	)
 
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-
-		// skip comments
-		if line == "" || strings.HasPrefix(line, "//") || strings.HasPrefix(line, "/*") {
-			continue
-		}
-
-		matches := messageRegex.FindStringSubmatch(line)
-		if len(matches) > 1 {
-			messageName := "message " + matches[1]
-			messages = append(messages, messageName)
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-
-	result := strings.Join(messages, "\n")
+	result := strings.Join(content, "\n")
 	return result, nil
 }
 
