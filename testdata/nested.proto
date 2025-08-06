@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message Outer {
+  message Inner {
+    string value = 1;
+  }
+  Inner inner = 1;
+}
+
+service NestedService {
+  rpc Process (Outer) returns (Outer.Inner);
+}
