@@ -1,7 +1,6 @@
-package main
+package parser
 
 import (
-	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -15,26 +14,22 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-func main() {
+type Parser struct{}
 
-	dirPtr := flag.String("dir", ".", "The directory to analyze")
-	outputPtr := flag.String("output", "output.txt", "The output file")
-	flag.Parse()
+func New() *Parser {
+	return &Parser{}
+}
 
-	dir := *dirPtr
-
-	outputFile := *outputPtr
-	modulePath := ""
-
-	// Collect Go file structures
+func (p *Parser) ParseProject(dir string) (string, error) {
 	var result strings.Builder
+	modulePath := ""
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() && strings.HasSuffix(path, ".proto") {
-			fileContent, err := parseProtoFile(path)
+			fileContent, err := p.parseProtoFile(path)
 			if err != nil {
 				return fmt.Errorf("error parsing file %s: %w", path, err)
 			}
@@ -45,12 +40,12 @@ func main() {
 		}
 
 		if !info.IsDir() && strings.HasSuffix(path, "go.mod") {
-			modulePath = getModulePath(path)
+			modulePath = p.getModulePath(path)
 		}
 
 		// Parse Go files
 		if !info.IsDir() && strings.HasSuffix(path, ".go") {
-			fileContent, err := parseGoFile(path, modulePath)
+			fileContent, err := p.parseGoFile(path, modulePath)
 			if err != nil {
 				return fmt.Errorf("error parsing file %s: %w", path, err)
 			}
@@ -66,16 +61,66 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := os.WriteFile(outputFile, []byte(result.String()), 0644); err != nil {
-		fmt.Printf("Error writing to file %s: %v\n", outputFile, err)
-		os.Exit(1)
+	return result.String(), nil
+}
+
+func (p *Parser) parseGoFile(filePath, modulePath string) (string, error) {
+	fset := token.NewFileSet()
+	node, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
+
+	if err != nil {
+		return "", err
 	}
 
-	fmt.Printf("Output written to %s\n", outputFile)
+	var builder strings.Builder
+	builder.WriteString("package " + node.Name.Name + "\n")
+	ast.Inspect(node, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.ImportSpec:
+			// Collect only internal imports for now
+			if modulePath != "" && strings.Contains(x.Path.Value, modulePath) {
+				builder.WriteString("import " + x.Path.Value + "\n")
+			}
+		case *ast.FuncDecl:
+			builder.WriteString(p.formatFunctionSignature(fset, x) + "\n")
+		case *ast.GenDecl:
+			if x.Tok == token.TYPE {
+				for _, spec := range x.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					switch typeSpec.Type.(type) {
+					case *ast.StructType:
+						builder.WriteString(p.formatNode(fset, typeSpec) + "\n")
+					case *ast.InterfaceType:
+						builder.WriteString(p.formatNode(fset, typeSpec) + "\n")
+					}
+				}
+			}
+		}
+		return true
+	})
+
+	return builder.String(), nil
+}
+
+func (p *Parser) getModulePath(filePath string) string {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+
+	modFile, err := modfile.Parse(filePath, data, nil)
+	if err != nil {
+		return ""
+	}
+
+	return modFile.Module.Mod.Path
 }
 
 // Extract from proto files messages and services names
-func parseProtoFile(filepath string) (string, error) {
+func (p *Parser) parseProtoFile(filepath string) (string, error) {
 	reader, _ := os.Open(filepath)
 	defer reader.Close()
 
@@ -96,48 +141,7 @@ func parseProtoFile(filepath string) (string, error) {
 	return result, nil
 }
 
-func parseGoFile(filePath, modulePath string) (string, error) {
-	fset := token.NewFileSet()
-	node, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
-
-	if err != nil {
-		return "", err
-	}
-
-	var builder strings.Builder
-	builder.WriteString("package " + node.Name.Name + "\n")
-	ast.Inspect(node, func(n ast.Node) bool {
-		switch x := n.(type) {
-		case *ast.ImportSpec:
-			// Collect only internal imports for now
-			if modulePath != "" && strings.Contains(x.Path.Value, modulePath) {
-				builder.WriteString("import " + x.Path.Value + "\n")
-			}
-		case *ast.FuncDecl:
-			builder.WriteString(formatFunctionSignature(fset, x) + "\n")
-		case *ast.GenDecl:
-			if x.Tok == token.TYPE {
-				for _, spec := range x.Specs {
-					typeSpec, ok := spec.(*ast.TypeSpec)
-					if !ok {
-						continue
-					}
-					switch typeSpec.Type.(type) {
-					case *ast.StructType:
-						builder.WriteString(formatNode(fset, typeSpec) + "\n")
-					case *ast.InterfaceType:
-						builder.WriteString(formatNode(fset, typeSpec) + "\n")
-					}
-				}
-			}
-		}
-		return true
-	})
-
-	return builder.String(), nil
-}
-
-func formatFunctionSignature(fset *token.FileSet, funcDecl *ast.FuncDecl) string {
+func (p *Parser) formatFunctionSignature(fset *token.FileSet, funcDecl *ast.FuncDecl) string {
 	var builder strings.Builder
 
 	builder.WriteString("func ")
@@ -151,36 +155,21 @@ func formatFunctionSignature(fset *token.FileSet, funcDecl *ast.FuncDecl) string
 			builder.WriteString(field.Names[0].Name + " ")
 		}
 
-		builder.WriteString(formatNode(fset, field.Type))
+		builder.WriteString(p.formatNode(fset, field.Type))
 		builder.WriteString(") ")
 	}
 
 	// Add function name
 	builder.WriteString(funcDecl.Name.Name)
-	function := formatNode(fset, funcDecl.Type)
+	function := p.formatNode(fset, funcDecl.Type)
 	function = strings.Replace(function, "func", "", 1)
 	builder.WriteString(function)
 
 	return builder.String()
 }
 
-func formatNode(fset *token.FileSet, node ast.Node) string {
+func (p *Parser) formatNode(fset *token.FileSet, node ast.Node) string {
 	var buf strings.Builder
 	printer.Fprint(&buf, fset, node)
 	return buf.String()
-}
-
-func getModulePath(filePath string) string {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return ""
-	}
-
-	// Maybe modfile is overkill
-	modFile, err := modfile.Parse(filePath, data, nil)
-	if err != nil {
-		return ""
-	}
-
-	return modFile.Module.Mod.Path
 }
