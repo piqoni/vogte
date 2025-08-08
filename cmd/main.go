@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/piqoni/vogte/internal/parser"
@@ -15,18 +15,18 @@ func main() {
 	flag.Parse()
 
 	dir := *dirPtr
-
 	outputFile := *outputPtr
-	// modulePath := ""
 
-	parser := parser.New()
+	p := parser.New()
 
-	result, _ := parser.ParseProject(dir)
+	result, err := p.ParseProject(dir)
+	if err != nil {
+		log.Fatalf("Could not parse the project: %v", err)
+	}
 	if err := os.WriteFile(outputFile, []byte(result), 0644); err != nil {
-		fmt.Printf("Error writing to file %s: %v\n", outputFile, err)
-		os.Exit(1)
+		log.Fatalf("Error writing to file %s: %v\n", outputFile, err)
 	}
 
-	fmt.Printf("Output written to %s\n", outputFile)
+	log.Printf("Output written to %s\n", outputFile)
 
 }
