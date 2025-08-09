@@ -1,6 +1,9 @@
 package ui
 
-import "github.com/rivo/tview"
+import (
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+)
 
 type UI struct {
 	app        *tview.Application
@@ -16,7 +19,6 @@ func New(app *tview.Application) *UI {
 	ui.initComponents()
 	ui.setupLayout()
 
-	//layout
 	return ui
 }
 
@@ -24,6 +26,8 @@ func (ui *UI) initComponents() {
 	ui.chatView = tview.NewTextView().SetDynamicColors(true).SetScrollable(true).SetWrap(true)
 	ui.chatView.SetBorder(true).SetTitle(" VOGTE ")
 	ui.inputField = tview.NewInputField().SetLabel("Message: ")
+
+	ui.addLogo()
 }
 
 func (ui *UI) setupLayout() {
@@ -39,4 +43,15 @@ func (ui *UI) setupLayout() {
 
 func (ui *UI) GetRoot() tview.Primitive {
 	return ui.root
+}
+
+func (ui *UI) addLogo() {
+	logo := `██╗   ██╗ ██████╗  ██████╗ ████████╗███████╗
+██║   ██║██╔═══██╗██╔════╝ ╚══██╔══╝██╔════╝
+██║   ██║██║   ██║██║  ███╗   ██║   █████╗
+╚██╗ ██╔╝██║   ██║██║   ██║   ██║   ██╔══╝
+ ╚████╔╝ ╚██████╔╝╚███████║   ██║   ███████╗
+  ╚═══╝   ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝
+  `
+	ui.chatView.SetText(logo).SetTextColor(tcell.ColorLightYellow)
 }
