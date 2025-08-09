@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/piqoni/vogte/internal/app"
 	"github.com/piqoni/vogte/internal/parser"
 )
 
@@ -16,6 +17,12 @@ func main() {
 
 	dir := *dirPtr
 	outputFile := *outputPtr
+
+	application := app.New(*dirPtr)
+
+	if err := application.Run(); err != nil {
+		log.Printf("Aplication error: %w", err)
+	}
 
 	p := parser.New()
 
