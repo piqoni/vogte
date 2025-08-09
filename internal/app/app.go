@@ -37,7 +37,7 @@ func (a *Application) Run() error {
 		return event
 	})
 
-	if err := a.app.SetRoot(a.ui.GetRoot(), true).Run(); err != nil {
+	if err := a.app.SetRoot(a.ui.GetRoot(), true).ForceDraw().EnableMouse(true).Run(); err != nil {
 		return fmt.Errorf("failed to run: %v", err)
 	}
 

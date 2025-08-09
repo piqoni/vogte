@@ -26,6 +26,7 @@ func (ui *UI) initComponents() {
 	ui.chatView = tview.NewTextView().SetDynamicColors(true).SetScrollable(true).SetWrap(true)
 	ui.chatView.SetBorder(true).SetTitle(" VOGTE ")
 	ui.inputField = tview.NewInputField().SetLabel("Message: ")
+	// ui.chatView.SetBackgroundColor(tcell.ColorLightYellow)
 
 	ui.addLogo()
 }
@@ -53,5 +54,5 @@ func (ui *UI) addLogo() {
  ╚████╔╝ ╚██████╔╝╚███████║   ██║   ███████╗
   ╚═══╝   ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝
   `
-	ui.chatView.SetText(logo).SetTextColor(tcell.ColorLightYellow)
+	ui.chatView.SetText(logo).SetTextColor(tcell.ColorCadetBlue)
 }
