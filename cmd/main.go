@@ -21,7 +21,7 @@ func main() {
 	application := app.New(*dirPtr)
 
 	if err := application.Run(); err != nil {
-		log.Printf("Aplication error: %w", err)
+		log.Printf("Aplication error: %v", err)
 	}
 
 	p := parser.New()
