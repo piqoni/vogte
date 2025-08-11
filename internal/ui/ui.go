@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -8,8 +10,8 @@ import (
 type UI struct {
 	app        *tview.Application
 	root       *tview.Flex
-	chatView   *tview.TextView
-	inputField *tview.TextArea
+	chatView   *tview.TextArea
+	inputField *tview.InputField
 }
 
 func New(app *tview.Application) *UI {
@@ -23,13 +25,27 @@ func New(app *tview.Application) *UI {
 }
 
 func (ui *UI) initComponents() {
-	ui.chatView = tview.NewTextView().SetDynamicColors(true).SetScrollable(true).SetWrap(true)
+	ui.chatView = tview.NewTextArea().SetWrap(true)
 	ui.chatView.SetBorder(true).SetTitle(" VOGTE ")
-
-	ui.inputField = tview.NewTextArea().SetLabel("Message: ")
-	ui.inputField.SetBorder(true)
-
 	ui.addLogo()
+
+	ui.inputField = tview.NewInputField().SetLabel("Message: ")
+	ui.inputField.SetBorder(true)
+	ui.inputField.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEnter {
+			message := ui.inputField.GetText()
+			if message != "" {
+				text := fmt.Sprintf("\n You: %s", message)
+
+				currentText := ui.chatView.GetText()
+				ui.chatView.SetText(currentText+text, true)
+				// ui.chatView.ScrollToEnd()
+
+				ui.inputField.SetText("")
+			}
+		}
+	})
+
 }
 
 func (ui *UI) setupLayout() {
@@ -49,12 +65,12 @@ func (ui *UI) GetRoot() tview.Primitive {
 
 func (ui *UI) addLogo() {
 	logo := `
-  ██╗   ██╗ ██████╗  ██████╗ ████████╗███████╗
-  ██║   ██║██╔═══██╗██╔════╝ ╚══██╔══╝██╔════╝
-  ██║   ██║██║   ██║██║  ███╗   ██║   █████╗
-  ╚██╗ ██╔╝██║   ██║██║   ██║   ██║   ██╔══╝
-   ╚████╔╝ ╚██████╔╝╚███████║   ██║   ███████╗
-    ╚═══╝   ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝
-  `
-	ui.chatView.SetText(logo).SetTextColor(tcell.ColorCadetBlue)
+	 ██╗   ██╗ ██████╗  ██████╗ ████████╗███████╗
+	 ██║   ██║██╔═══██╗██╔════╝ ╚══██╔══╝██╔════╝
+	 ██║   ██║██║   ██║██║  ███╗   ██║   █████╗
+	 ╚██╗ ██╔╝██║   ██║██║   ██║   ██║   ██╔══╝
+	  ╚████╔╝ ╚██████╔╝╚███████║   ██║   ███████╗
+	   ╚═══╝   ╚═════╝  ╚══════╝   ╚═╝   ╚══════╝
+	 `
+	ui.chatView.SetText(logo, false)
 }
