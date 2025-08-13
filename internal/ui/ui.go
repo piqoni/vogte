@@ -12,6 +12,7 @@ type UI struct {
 	root       *tview.Flex
 	chatView   *tview.TextArea
 	inputField *tview.InputField
+	statusBar  *tview.TextView
 }
 
 func New(app *tview.Application) *UI {
@@ -25,6 +26,7 @@ func New(app *tview.Application) *UI {
 }
 
 func (ui *UI) initComponents() {
+	ui.statusBar = tview.NewTextView().SetText("Status: 🟢") // TODO
 	ui.chatView = tview.NewTextArea().SetWrap(true)
 	ui.chatView.SetBorder(true).SetTitle(" VOGTE ")
 	ui.addLogo()
@@ -36,7 +38,6 @@ func (ui *UI) initComponents() {
 			message := ui.inputField.GetText()
 			if message != "" {
 				text := fmt.Sprintf("\n You: %s", message)
-
 				currentText := ui.chatView.GetText()
 				ui.chatView.SetText(currentText+text, true)
 				// ui.chatView.ScrollToEnd()
@@ -52,11 +53,9 @@ func (ui *UI) setupLayout() {
 	chatArea := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(ui.chatView, 0, 3, false).
 		AddItem(ui.inputField, 8, 1, true)
-	ui.root = tview.NewFlex().SetDirection(tview.FlexColumn).
+	ui.root = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(ui.statusBar, 1, 1, false).
 		AddItem(chatArea, 0, 1, true)
-
-	ui.root = tview.NewFlex().SetDirection(tview.FlexRow).AddItem(chatArea, 0, 1, true)
-
 }
 
 func (ui *UI) GetRoot() tview.Primitive {
