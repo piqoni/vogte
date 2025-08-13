@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/piqoni/vogte/internal/parser"
@@ -10,17 +12,19 @@ import (
 )
 
 type Application struct {
-	baseDir string
-	app     *tview.Application
-	ui      *ui.UI
-	parser  *parser.Parser
+	baseDir    string
+	outputFile string
+	app        *tview.Application
+	ui         *ui.UI
+	parser     *parser.Parser
 }
 
-func New(baseDir string) *Application {
+func New(baseDir, outputFile string) *Application {
 	app := &Application{
-		baseDir: baseDir,
-		app:     tview.NewApplication(),
-		parser:  parser.New(),
+		baseDir:    baseDir,
+		app:        tview.NewApplication(),
+		parser:     parser.New(),
+		outputFile: outputFile,
 	}
 	app.ui = ui.New(app.app, app.messageHandler)
 	return app
@@ -45,5 +49,15 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) messageHandler(message string) {
-	fmt.Println(message) //TODO
+	p := parser.New()
+
+	result, err := p.ParseProject(a.baseDir)
+	if err != nil {
+		log.Fatalf("Could not parse the project: %v", err)
+	}
+	if err := os.WriteFile(a.outputFile, []byte(result), 0644); err != nil {
+		log.Fatalf("Error writing to file %s: %v\n", a.outputFile, err)
+	}
+
+	log.Printf("Output written to %s\n", a.outputFile)
 }
