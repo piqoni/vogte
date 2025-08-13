@@ -13,11 +13,13 @@ type UI struct {
 	chatView   *tview.TextArea
 	inputField *tview.InputField
 	statusBar  *tview.TextView
+	onMessage  func(string)
 }
 
-func New(app *tview.Application) *UI {
+func New(app *tview.Application, onMessage func(string)) *UI {
 	ui := &UI{
-		app: app,
+		app:       app,
+		onMessage: onMessage,
 	}
 	ui.initComponents()
 	ui.setupLayout()
@@ -42,6 +44,7 @@ func (ui *UI) initComponents() {
 				ui.chatView.SetText(currentText+text, true)
 				// ui.chatView.ScrollToEnd()
 
+				ui.onMessage(message)
 				ui.inputField.SetText("")
 			}
 		}

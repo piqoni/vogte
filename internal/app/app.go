@@ -22,7 +22,7 @@ func New(baseDir string) *Application {
 		app:     tview.NewApplication(),
 		parser:  parser.New(),
 	}
-	app.ui = ui.New(app.app)
+	app.ui = ui.New(app.app, app.messageHandler)
 	return app
 }
 
@@ -42,4 +42,8 @@ func (a *Application) Run() error {
 	}
 
 	return nil
+}
+
+func (a *Application) messageHandler(message string) {
+	fmt.Println(message) //TODO
 }
