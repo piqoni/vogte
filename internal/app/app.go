@@ -49,15 +49,17 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) messageHandler(message string) {
-	p := parser.New()
+	go func() {
+		p := parser.New()
 
-	result, err := p.ParseProject(a.baseDir)
-	if err != nil {
-		log.Fatalf("Could not parse the project: %v", err)
-	}
-	if err := os.WriteFile(a.outputFile, []byte(result), 0644); err != nil {
-		log.Fatalf("Error writing to file %s: %v\n", a.outputFile, err)
-	}
+		result, err := p.ParseProject(a.baseDir)
+		if err != nil {
+			log.Fatalf("Could not parse the project: %v", err)
+		}
+		if err := os.WriteFile(a.outputFile, []byte(result), 0644); err != nil {
+			log.Fatalf("Error writing to file %s: %v\n", a.outputFile, err)
+		}
 
-	log.Printf("Output written to %s\n", a.outputFile)
+		log.Printf("Output written to %s\n", a.outputFile)
+	}()
 }
