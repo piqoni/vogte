@@ -13,10 +13,7 @@ func main() {
 	outputPtr := flag.String("output", "output.txt", "The output file")
 	flag.Parse()
 
-	dir := *dirPtr
-	outputFile := *outputPtr
-
-	application := app.New(dir, outputFile)
+	application := app.New(*dirPtr, *outputPtr)
 
 	if err := application.Run(); err != nil {
 		log.Printf("Aplication error: %v", err)
