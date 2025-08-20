@@ -52,7 +52,7 @@ func (ui *UI) updateStatusBar() {
 		agentStyle = "[::bu]AGENT[::-]"
 	}
 
-	statusText := fmt.Sprintf("Model: gpt-5 | dir: vogte | status: 🟢 | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
+	statusText := fmt.Sprintf("Model: gpt-5 | Dir: vogte | Status: 🟢 | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
 		askStyle, agentStyle)
 
 	ui.statusBar.SetText(statusText)
