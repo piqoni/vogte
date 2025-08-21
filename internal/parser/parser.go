@@ -45,6 +45,11 @@ func (p *Parser) ParseProject(dir string) (string, error) {
 
 		// Parse Go files
 		if !info.IsDir() && strings.HasSuffix(path, ".go") {
+			// Skip generated protobuf/grpc gateway files
+			if strings.HasSuffix(path, ".pb.go") || strings.HasSuffix(path, ".pb.gw.go") {
+				return nil
+			}
+
 			fileContent, err := p.parseGoFile(path, modulePath)
 			if err != nil {
 				return fmt.Errorf("error parsing file %s: %w", path, err)
