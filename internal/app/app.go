@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/piqoni/vogte/internal/parser"
@@ -35,7 +36,6 @@ func New(baseDir, outputFile string) *Application {
 }
 
 func (a *Application) Run() error {
-
 	a.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlC:
@@ -53,6 +53,9 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) messageHandler(message string) {
+	if strings.ToLower(message) == "quit" || strings.ToLower(message) == "exit" {
+		a.app.Stop()
+	}
 	switch a.Mode {
 	case "ASK":
 		a.handleAskMode(message)
