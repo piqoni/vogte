@@ -16,6 +16,7 @@ type UI struct {
 	onMessage    func(string)
 	onModeChange func(mode string) // "ASK" or "AGENT"
 	currentMode  string
+	baseDir      string
 }
 
 func New(app *tview.Application, onMessage func(string)) *UI {
@@ -38,6 +39,11 @@ func (ui *UI) SetMode(mode string) {
 	ui.updateStatusBar()
 }
 
+func (ui *UI) SetBaseDir(dir string) {
+	ui.baseDir = dir
+	ui.updateStatusBar()
+}
+
 func (ui *UI) GetMode() string {
 	return ui.currentMode
 }
@@ -52,8 +58,10 @@ func (ui *UI) updateStatusBar() {
 		agentStyle = "[::bu]AGENT[::-]"
 	}
 
-	statusText := fmt.Sprintf("Model: gpt-5 | Dir: vogte | Status: 🟢 | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
-		askStyle, agentStyle)
+	statusText := fmt.Sprintf(
+		"Model: %s | Dir: %s | Status: %s | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
+		"gpt-5", ui.baseDir, "🟢", askStyle, agentStyle,
+	)
 
 	ui.statusBar.SetText(statusText)
 }
@@ -131,17 +139,14 @@ func (ui *UI) addLogo() {
 	ui.chatView.SetText(logo, false)
 }
 
-// GetChatText returns the current text in the chat view
 func (ui *UI) GetChatText() string {
 	return ui.chatView.GetText()
 }
 
-// SetChatText sets the text in the chat view
 func (ui *UI) SetChatText(text string) {
 	ui.chatView.SetText(text, true)
 }
 
-// AppendChatText appends text to the chat view
 func (ui *UI) AppendChatText(text string) {
 	currentText := ui.chatView.GetText()
 	ui.chatView.SetText(currentText+text, true)

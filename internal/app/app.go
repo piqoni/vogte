@@ -32,6 +32,7 @@ func New(baseDir, outputFile string) *Application {
 	app.ui = ui.New(app.app, app.messageHandler)
 	app.ui.SetModeChangeCallback(app.modeChangeHandler)
 	app.ui.SetMode(app.Mode)
+	app.ui.SetBaseDir(baseDir)
 	return app
 }
 
