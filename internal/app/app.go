@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -54,7 +53,7 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) messageHandler(message string) {
-	if strings.ToLower(message) == "quit" || strings.ToLower(message) == "exit" {
+	if strings.ToLower(message) == "quit" || message == "q" || strings.ToLower(message) == "exit" {
 		a.app.Stop()
 	}
 	switch a.Mode {
@@ -64,18 +63,16 @@ func (a *Application) messageHandler(message string) {
 		a.handleAgentMode(message)
 	}
 	go func() {
-		p := parser.New()
-
-		result, err := p.ParseProject(a.baseDir)
+		result, err := a.parser.ParseProject(a.baseDir)
 		if err != nil {
 			log.Fatalf("Could not parse the project: %v", err)
 		}
-		if err := os.WriteFile(a.outputFile, []byte(result), 0644); err != nil {
-			log.Fatalf("Error writing to file %s: %v\n", a.outputFile, err)
-		}
 
-		log.Printf("Output written to %s\n", a.outputFile)
+		_ = result // TODO
+
 	}()
+	a.postSystemMessage("this is a test") // TODO
+
 }
 
 func (app *Application) modeChangeHandler(newMode string) {
@@ -112,4 +109,8 @@ func (app *Application) handleAgentMode(message string) { // todo
 	response := fmt.Sprintf("\n Agent (AGENT): %s", message)
 	currentText := app.ui.GetChatText()
 	app.ui.SetChatText(currentText + response)
+}
+
+func (a *Application) Parse() (string, error) {
+	return a.parser.ParseProject(a.baseDir)
 }
