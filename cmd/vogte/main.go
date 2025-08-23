@@ -11,7 +11,7 @@ import (
 func main() {
 
 	dirPtr := flag.String("dir", ".", "The directory to analyze")
-	outputPtr := flag.String("output", "output.txt", "The output file")
+	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
 	flag.Parse()
 
 	application := app.New(*dirPtr, *outputPtr)

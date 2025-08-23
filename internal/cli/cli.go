@@ -8,12 +8,12 @@ import (
 )
 
 func Run(application *app.Application, outputPath string) error {
-	result, err := application.Parse()
+	structure, err := application.Parse()
 	if err != nil {
 		return fmt.Errorf("could not parse project: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, []byte(result), 0644); err != nil {
+	if err := os.WriteFile(outputPath, []byte(structure), 0644); err != nil {
 		return fmt.Errorf("error writing to file %s: %w", outputPath, err)
 	}
 

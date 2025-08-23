@@ -63,12 +63,12 @@ func (a *Application) messageHandler(message string) {
 		a.handleAgentMode(message)
 	}
 	go func() {
-		result, err := a.parser.ParseProject(a.baseDir)
+		structure, err := a.parser.ParseProject(a.baseDir)
 		if err != nil {
 			log.Fatalf("Could not parse the project: %v", err)
 		}
 
-		_ = result // TODO
+		_ = structure // TODO
 
 	}()
 	a.postSystemMessage("this is a test") // TODO
