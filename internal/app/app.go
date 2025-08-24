@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -21,9 +20,10 @@ type Application struct {
 	parser     *parser.Parser
 	Mode       string
 
-	stateMu sync.RWMutex
-	state   ui.ProjectState
-	stateCh chan ui.ProjectState
+	stateMu   sync.RWMutex
+	state     ui.ProjectState
+	stateCh   chan ui.ProjectState
+	lastError error
 }
 
 func New(baseDir, outputFile string) *Application {
@@ -72,17 +72,25 @@ func (a *Application) messageHandler(message string) {
 	case "AGENT":
 		a.handleAgentMode(message)
 	}
-	go func() {
+
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
 		structure, err := a.parser.ParseProject(a.baseDir)
-		a.setState(ui.StateError)
+		// a.setState(ui.StateError) // remove me, just a test
 		if err != nil {
-			log.Fatalf("Could not parse the project: %v", err)
+			a.setState(ui.StateError)
+			a.setError(fmt.Errorf("Could not parse the project: %w ", err))
 		}
 
 		_ = structure // TODO
 
-	}()
-	a.postSystemMessage("this is a test") // TODO
+	})
+
+	wg.Wait()
+	if a.lastError != nil {
+		a.postSystemMessage("ERROR: " + a.lastError.Error())
+	}
 
 }
 
@@ -143,17 +151,30 @@ func (a *Application) stateMonitor() {
 
 		case <-ticker.C:
 			// TODO periodic check on health and update
-			currentState := ui.StateHealthy
-			a.app.QueueUpdateDraw(func() {
-				a.ui.SetState(currentState)
-			})
+			// currentState := ui.StateHealthy
+			// a.app.QueueUpdateDraw(func() {
+			// a.ui.SetState(currentState)
+			// })
 		}
 	}
 }
+
 func (a *Application) setState(state ui.ProjectState) {
 	select {
 	case a.stateCh <- state:
 	default:
 		// Channel full, skip update
 	}
+}
+
+func (a *Application) setError(err error) {
+	a.stateMu.Lock()
+	defer a.stateMu.Unlock()
+	a.lastError = err
+}
+
+func (a *Application) getLastError() error {
+	a.stateMu.RLock()
+	defer a.stateMu.RUnlock()
+	return a.lastError
 }
