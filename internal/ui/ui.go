@@ -7,6 +7,25 @@ import (
 	"github.com/rivo/tview"
 )
 
+type ProjectState int
+
+const (
+	StateUnknown ProjectState = iota
+	StateHealthy
+	StateError
+)
+
+func (s ProjectState) Emojify() string {
+	switch s {
+	case StateHealthy:
+		return "🟢"
+	case StateError:
+		return "🔴"
+	default:
+		return "⚪️"
+	}
+}
+
 type UI struct {
 	app          *tview.Application
 	root         *tview.Flex
@@ -16,6 +35,7 @@ type UI struct {
 	onMessage    func(string)
 	onModeChange func(mode string) // "ASK" or "AGENT"
 	currentMode  string
+	currentState ProjectState
 	baseDir      string
 }
 
@@ -36,19 +56,23 @@ func (ui *UI) SetModeChangeCallback(callback func(mode string)) {
 
 func (ui *UI) SetMode(mode string) {
 	ui.currentMode = mode
-	ui.updateStatusBar()
+	ui.RefreshStatusBar()
 }
 
 func (ui *UI) SetBaseDir(dir string) {
 	ui.baseDir = dir
-	ui.updateStatusBar()
+	ui.RefreshStatusBar()
 }
 
 func (ui *UI) GetMode() string {
 	return ui.currentMode
 }
+func (ui *UI) SetState(state ProjectState) {
+	ui.currentState = state
+	ui.RefreshStatusBar()
+}
 
-func (ui *UI) updateStatusBar() {
+func (ui *UI) RefreshStatusBar() {
 	askStyle := "ASK"
 	agentStyle := "AGENT"
 
@@ -60,7 +84,11 @@ func (ui *UI) updateStatusBar() {
 
 	statusText := fmt.Sprintf(
 		"Model: %s | Dir: %s | Status: %s | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
-		"gpt-5", ui.baseDir, "🟢", askStyle, agentStyle,
+		"gpt-5",
+		ui.baseDir,
+		ui.currentState.Emojify(),
+		askStyle,
+		agentStyle,
 	)
 
 	ui.statusBar.SetText(statusText)
@@ -91,7 +119,7 @@ func (ui *UI) initComponents() {
 		SetTextStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
 
 	// Initialize the status bar text
-	ui.updateStatusBar()
+	ui.RefreshStatusBar()
 
 	ui.chatView = tview.NewTextArea().SetWrap(true)
 	ui.chatView.SetBorder(false)
@@ -125,6 +153,10 @@ func (ui *UI) setupLayout() {
 
 func (ui *UI) GetRoot() tview.Primitive {
 	return ui.root
+}
+
+func (ui *UI) UpdateState(state ProjectState) {
+	ui.statusBar.SetText(state.Emojify())
 }
 
 func (ui *UI) addLogo() {

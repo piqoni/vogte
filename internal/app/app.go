@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/piqoni/vogte/internal/parser"
@@ -18,6 +20,10 @@ type Application struct {
 	ui         *ui.UI
 	parser     *parser.Parser
 	Mode       string
+
+	stateMu sync.RWMutex
+	state   ui.ProjectState
+	stateCh chan ui.ProjectState
 }
 
 func New(baseDir, outputFile string) *Application {
@@ -27,6 +33,8 @@ func New(baseDir, outputFile string) *Application {
 		parser:     parser.New(),
 		outputFile: outputFile,
 		Mode:       "AGENT",
+		state:      ui.StateUnknown,
+		stateCh:    make(chan ui.ProjectState, 1),
 	}
 	app.ui = ui.New(app.app, app.messageHandler)
 	app.ui.SetModeChangeCallback(app.modeChangeHandler)
@@ -36,6 +44,8 @@ func New(baseDir, outputFile string) *Application {
 }
 
 func (a *Application) Run() error {
+
+	go a.stateMonitor()
 	a.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlC:
@@ -64,6 +74,7 @@ func (a *Application) messageHandler(message string) {
 	}
 	go func() {
 		structure, err := a.parser.ParseProject(a.baseDir)
+		a.setState(ui.StateError)
 		if err != nil {
 			log.Fatalf("Could not parse the project: %v", err)
 		}
@@ -113,4 +124,36 @@ func (app *Application) handleAgentMode(message string) { // todo
 
 func (a *Application) Parse() (string, error) {
 	return a.parser.ParseProject(a.baseDir)
+}
+
+func (a *Application) stateMonitor() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case newState := <-a.stateCh:
+			a.stateMu.Lock()
+			a.state = newState
+			a.stateMu.Unlock()
+
+			a.app.QueueUpdateDraw(func() {
+				a.ui.SetState(newState)
+			})
+
+		case <-ticker.C:
+			// TODO periodic check on health and update
+			currentState := ui.StateHealthy
+			a.app.QueueUpdateDraw(func() {
+				a.ui.SetState(currentState)
+			})
+		}
+	}
+}
+func (a *Application) setState(state ui.ProjectState) {
+	select {
+	case a.stateCh <- state:
+	default:
+		// Channel full, skip update
+	}
 }
