@@ -133,9 +133,9 @@ func (a *Application) stateMonitor() {
 	for {
 		select {
 		case newState := <-a.stateCh:
-			a.stateMu.Lock()
+			a.stateMu.RLock()
 			a.state = newState
-			a.stateMu.Unlock()
+			a.stateMu.RUnlock()
 
 			a.app.QueueUpdateDraw(func() {
 				a.ui.SetState(newState)
