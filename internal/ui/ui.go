@@ -126,7 +126,7 @@ func (ui *UI) initComponents() {
 	ui.addLogo()
 
 	ui.inputField = tview.NewInputField().SetLabel("Message: ")
-	ui.inputField.SetBorder(true)
+	ui.inputField.SetBorder(false)
 	ui.inputField.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
 			message := ui.inputField.GetText()
@@ -144,7 +144,7 @@ func (ui *UI) initComponents() {
 func (ui *UI) setupLayout() {
 	chatArea := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(ui.chatView, 0, 3, false).
-		AddItem(ui.inputField, 8, 1, true)
+		AddItem(ui.inputField, 2, 1, true)
 
 	ui.root = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(ui.statusBar, 1, 1, false).
