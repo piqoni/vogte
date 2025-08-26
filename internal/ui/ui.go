@@ -30,7 +30,7 @@ type UI struct {
 	app          *tview.Application
 	root         *tview.Flex
 	chatView     *tview.TextArea
-	inputField   *tview.InputField
+	inputField   *tview.TextArea
 	statusBar    *tview.TextView
 	onMessage    func(string)
 	onModeChange func(mode string) // "ASK" or "AGENT"
@@ -125,26 +125,29 @@ func (ui *UI) initComponents() {
 	ui.chatView.SetBorder(false)
 	ui.addLogo()
 
-	ui.inputField = tview.NewInputField().SetLabel("Message: ")
-	ui.inputField.SetBorder(false)
-	ui.inputField.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			message := ui.inputField.GetText()
-			if message != "" {
+	ui.inputField = tview.NewTextArea().SetWrap(true)
+	ui.inputField.SetBorder(true).SetTitle(" Message: (Ctrl+Enter to Submit) ")
+	ui.inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEnter:
+			if true { //FIXME event.Modifiers()&tcell.ModCtrl != 0 {
+				message := ui.inputField.GetText()
 				text := fmt.Sprintf("\n You: %s", message)
 				currentText := ui.chatView.GetText()
 				ui.chatView.SetText(currentText+text, true)
 				ui.onMessage(message)
-				ui.inputField.SetText("")
+				ui.inputField.SetText("", false)
+				return nil
 			}
 		}
+		return event
 	})
 }
 
 func (ui *UI) setupLayout() {
 	chatArea := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(ui.chatView, 0, 3, false).
-		AddItem(ui.inputField, 2, 1, true)
+		AddItem(ui.inputField, 8, 1, true)
 
 	ui.root = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(ui.statusBar, 1, 1, false).
