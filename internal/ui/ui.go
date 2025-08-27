@@ -83,12 +83,12 @@ func (ui *UI) RefreshStatusBar() {
 	}
 
 	statusText := fmt.Sprintf(
-		"Model: %s | Dir: %s | Status: %s | Mode: [\"ask\"]%s[\"ask\"] | [\"agent\"]%s[\"agent\"]",
+		"Model: %s | Status: %s | Mode: [\"ask\"]%s[\"ask\"] ↔ [\"agent\"]%s[\"agent\"] | Dir: %s ",
 		"gpt-5",
-		ui.baseDir,
 		ui.currentState.Emojify(),
 		askStyle,
 		agentStyle,
+		ui.baseDir,
 	)
 
 	ui.statusBar.SetText(statusText)
@@ -126,7 +126,7 @@ func (ui *UI) initComponents() {
 	ui.addLogo()
 
 	ui.inputField = tview.NewTextArea().SetWrap(true)
-	ui.inputField.SetBorder(true).SetTitle(" Message: (Ctrl+Enter to Submit) ")
+	ui.inputField.SetBorder(true).SetTitle("Message: (Ctrl+Enter to Submit) ")
 	ui.inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEnter:
