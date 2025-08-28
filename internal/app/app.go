@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/piqoni/vogte/internal/config"
+	"github.com/piqoni/vogte/internal/llm"
 	"github.com/piqoni/vogte/internal/parser"
 	"github.com/piqoni/vogte/internal/ui"
 	"github.com/rivo/tview"
@@ -18,6 +20,7 @@ type Application struct {
 	app        *tview.Application
 	ui         *ui.UI
 	parser     *parser.Parser
+	llm        *llm.Client
 	Mode       string
 
 	stateMu   sync.RWMutex
@@ -26,11 +29,12 @@ type Application struct {
 	lastError error
 }
 
-func New(baseDir, outputFile string) *Application {
+func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 	app := &Application{
 		baseDir:    baseDir,
 		app:        tview.NewApplication(),
 		parser:     parser.New(),
+		llm:        llm.New(cfg),
 		outputFile: outputFile,
 		Mode:       "AGENT",
 		state:      ui.StateUnknown,
@@ -83,8 +87,14 @@ func (a *Application) messageHandler(message string) {
 			a.setError(fmt.Errorf("Could not parse the project: %w ", err))
 		}
 
-		_ = structure // TODO
-
+		// Send to LLM
+		response, err := a.llm.SendMessage(message, structure)
+		if err != nil {
+			a.setState(ui.StateError)
+			a.setError(fmt.Errorf("LLM error: %w", err))
+			a.postSystemMessage(err.Error())
+		}
+		a.postSystemMessage(response)
 	})
 
 	wg.Wait()

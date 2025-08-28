@@ -6,15 +6,21 @@ import (
 
 	"github.com/piqoni/vogte/internal/app"
 	"github.com/piqoni/vogte/internal/cli"
+	"github.com/piqoni/vogte/internal/config"
 )
 
 func main() {
 
+	configPtr := flag.String("config", "", "Path to config file")
 	dirPtr := flag.String("dir", ".", "The directory to analyze")
 	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
 	flag.Parse()
 
-	application := app.New(*dirPtr, *outputPtr)
+	cfg := config.Load(*configPtr)
+	if cfg == nil {
+		log.Fatal("Failed to load configuration")
+	}
+	application := app.New(cfg, *dirPtr, *outputPtr)
 
 	outputFlag := flag.Lookup("output")
 	wasOutputPassed := outputFlag.Value.String() != outputFlag.DefValue
