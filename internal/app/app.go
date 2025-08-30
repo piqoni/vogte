@@ -41,7 +41,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 		stateCh:    make(chan ui.ProjectState, 1),
 	}
 	app.ui = ui.New(app.app, app.messageHandler)
-	app.ui.SetModeChangeCallback(app.modeChangeHandler)
+	// app.ui.SetModeChangeCallback(app.modeChangeHandler)  //remove
 	app.ui.SetMode(app.Mode)
 	app.ui.SetBaseDir(baseDir)
 	return app
@@ -70,12 +70,12 @@ func (a *Application) messageHandler(message string) {
 	if strings.ToLower(message) == "quit" || message == "q" || strings.ToLower(message) == "exit" {
 		a.app.Stop()
 	}
-	switch a.Mode {
-	case "ASK":
-		a.handleAskMode(message)
-	case "AGENT":
-		a.handleAgentMode(message)
-	}
+	// switch a.Mode {
+	// case "ASK":
+	// a.handleAskMode(message)
+	// case "AGENT":
+	// a.handleAgentMode(message)
+	// }
 
 	var wg sync.WaitGroup
 
@@ -88,32 +88,36 @@ func (a *Application) messageHandler(message string) {
 		}
 
 		// Send to LLM
-		response, err := a.llm.SendMessage(message, structure)
+		response, err := a.llm.SendMessage(message, structure, a.Mode)
 		if err != nil {
 			a.setState(ui.StateError)
 			a.setError(fmt.Errorf("LLM error: %w", err))
 			a.postSystemMessage(err.Error())
 		}
+		a.postSystemMessage(a.Mode)
 		a.postSystemMessage(response)
 	})
 
-	wg.Wait()
-	if a.lastError != nil {
-		a.postSystemMessage("ERROR: " + a.lastError.Error())
-	}
+	// wg.Wait()
+	// if a.lastError != nil {
+	// a.postSystemMessage("ERROR: " + a.lastError.Error())
+	// }
 
 }
 
 func (app *Application) modeChangeHandler(newMode string) {
 	app.Mode = newMode
 
-	app.postSystemMessage(fmt.Sprintf("Mode changed to: %s", newMode))
+	// app.postSystemMessage(fmt.Sprintf("Mode changed to: %s", newMode))
 }
 
 func (app *Application) postSystemMessage(message string) {
-	systemMessage := fmt.Sprintf("\n System: %s", message)
-	currentText := app.ui.GetChatText()
-	app.ui.SetChatText(currentText + systemMessage)
+	// Schedule the UI update to run on the main UI thread.
+	app.app.QueueUpdateDraw(func() {
+		systemMessage := fmt.Sprintf("\n System: %s", message)
+		// currentText := app.ui.GetChatText()
+		app.ui.AppendChatText(systemMessage)
+	})
 }
 
 func (app *Application) SetMode(mode string) {
@@ -128,11 +132,11 @@ func (app *Application) GetMode() string {
 	return app.Mode
 }
 
-func (app *Application) handleAskMode(message string) { // todo
-	response := fmt.Sprintf("\n Assistant (ASK): %s", message)
-	currentText := app.ui.GetChatText()
-	app.ui.SetChatText(currentText + response)
-}
+// func (app *Application) handleAskMode(message string) { // todo
+// 	response := fmt.Sprintf("\n Assistant (ASK): %s", message)
+// 	currentText := app.ui.GetChatText()
+// 	app.ui.SetChatText(currentText + response)
+// }
 
 func (app *Application) handleAgentMode(message string) { // todo
 	response := fmt.Sprintf("\n Agent (AGENT): %s", message)

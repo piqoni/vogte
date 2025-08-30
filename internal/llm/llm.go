@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -72,9 +73,15 @@ type ChatResponse struct {
 // SendMessage sends a message to the LLM using a two-step approach:
 // 1. First asks which files are needed
 // 2. Then sends full file contents for patching
-func (c *Client) SendMessage(userMessage, projectStructure string) (string, error) {
+func (c *Client) SendMessage(userMessage, projectStructure, mode string) (string, error) {
 	if c.config.LLM.APIKey == "" {
 		return "", fmt.Errorf("LLM API key not configured")
+	}
+
+	if mode == "ASK" {
+		log.Print("SIMPLE ASK PATH")
+		log.Printf("userMessage: %s, projectStructure: %s", userMessage, projectStructure)
+		return c.sendSimpleMessage(userMessage, projectStructure)
 	}
 
 	// Step 1: Ask LLM which files it needs
@@ -84,7 +91,9 @@ func (c *Client) SendMessage(userMessage, projectStructure string) (string, erro
 	}
 
 	// TODO: decide what to do when no list of files is returned
-
+	if len(fileList) == 0 {
+		return "", fmt.Errorf("first step didnt return any file from the llm, inspect your user prompt")
+	}
 	// Step 2: Get full content of required files
 	fullFiles, err := c.getFileContents(fileList)
 	if err != nil {
@@ -121,6 +130,7 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 	}
 
 	response, err := c.sendChatRequest(request)
+	log.Printf("first response to get list of files: %s", response)
 	if err := os.WriteFile("llm.log", []byte(response), 0644); err != nil {
 		fmt.Printf("Error writing to file: %v\n", err)
 	}
@@ -222,6 +232,30 @@ If the function signature is complex, try using a simpler context or just the li
 		{
 			Role:    "user",
 			Content: promptBuilder.String(),
+		},
+	}
+
+	request := ChatRequest{
+		Model:    c.config.LLM.Model,
+		Messages: messages,
+		// Temperature:         0.1,
+		MaxCompletionTokens: 4000,
+	}
+
+	return c.sendChatRequest(request)
+}
+
+func (c *Client) sendSimpleMessage(userMessage, projectStructure string) (string, error) {
+	systemPrompt := c.buildSystemPrompt(projectStructure)
+
+	messages := []Message{
+		{
+			Role:    "system",
+			Content: systemPrompt,
+		},
+		{
+			Role:    "user",
+			Content: userMessage,
 		},
 	}
 
