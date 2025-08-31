@@ -41,7 +41,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 		stateCh:    make(chan ui.ProjectState, 1),
 	}
 	app.ui = ui.New(app.app, app.messageHandler)
-	// app.ui.SetModeChangeCallback(app.modeChangeHandler)  //remove
+	app.ui.SetModeChangeCallback(app.modeChangeHandler)
 	app.ui.SetMode(app.Mode)
 	app.ui.SetBaseDir(baseDir)
 	return app
@@ -124,7 +124,7 @@ func (app *Application) SetMode(mode string) {
 	if app.Mode != mode {
 		app.Mode = mode
 		app.ui.SetMode(mode)
-		app.postSystemMessage(fmt.Sprintf("Mode changed to: %s", mode))
+		// app.postSystemMessage(fmt.Sprintf("Mode changed to: %s", mode))
 	}
 }
 

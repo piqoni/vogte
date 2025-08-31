@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-
+	askPtr := flag.Bool("ask", false, "Start in ASK mode")
 	configPtr := flag.String("config", "", "Path to config file")
 	dirPtr := flag.String("dir", ".", "The directory to analyze")
 	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
@@ -21,6 +21,12 @@ func main() {
 		log.Fatal("Failed to load configuration")
 	}
 	application := app.New(cfg, *dirPtr, *outputPtr)
+
+	if *askPtr {
+		application.SetMode("ASK")
+	} else {
+		application.SetMode("AGENT")
+	}
 
 	outputFlag := flag.Lookup("output")
 	wasOutputPassed := outputFlag.Value.String() != outputFlag.DefValue
