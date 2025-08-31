@@ -1,4 +1,4 @@
 tmp/
-vogte
+./vogte
 .DS_Store
 output.txt
