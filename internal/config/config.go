@@ -35,7 +35,10 @@ func Load(configPath string) *Config {
 func defaultConfig() *Config {
 	cfg := &Config{}
 
-	// LLM defaults
+	cfg.LLM.Model = os.Getenv("VOGTE_MODEL")
+	if cfg.LLM.Model == "" {
+		cfg.LLM.Model = "gpt-5"
+	}
 	cfg.LLM.Model = "gpt-5"
 	cfg.LLM.Endpoint = "https://api.openai.com/v1/chat/completions"
 	cfg.LLM.APIKey = os.Getenv("OPENAI_API_KEY")
