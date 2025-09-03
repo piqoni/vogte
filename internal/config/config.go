@@ -35,7 +35,7 @@ func Load(configPath string) *Config {
 func defaultConfig() *Config {
 	cfg := &Config{}
 
-	cfg.LLM.Model = os.Getenv("VOGTE_MODEL")
+	cfg.LLM.Model = os.Getenv("VOGTE_LLM_MODEL")
 	if cfg.LLM.Model == "" {
 		cfg.LLM.Model = "gpt-5"
 	}
