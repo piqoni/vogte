@@ -10,6 +10,7 @@ import (
 	"github.com/piqoni/vogte/internal/config"
 	"github.com/piqoni/vogte/internal/llm"
 	"github.com/piqoni/vogte/internal/parser"
+	"github.com/piqoni/vogte/internal/patcher"
 	"github.com/piqoni/vogte/internal/ui"
 	"github.com/rivo/tview"
 )
@@ -20,6 +21,7 @@ type Application struct {
 	app        *tview.Application
 	ui         *ui.UI
 	parser     *parser.Parser
+	patcher    *patcher.Patcher
 	llm        *llm.Client
 	Mode       string
 
@@ -34,6 +36,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 		baseDir:    baseDir,
 		app:        tview.NewApplication(),
 		parser:     parser.New(),
+		patcher:    patcher.New(baseDir),
 		llm:        llm.New(cfg),
 		outputFile: outputFile,
 		Mode:       "AGENT",
@@ -96,6 +99,10 @@ func (a *Application) messageHandler(message string) {
 		}
 		a.postSystemMessage(a.Mode)
 		a.postSystemMessage(response)
+
+		if a.Mode == "AGENT" {
+			a.patcher.ParseAndApply(response)
+		}
 	})
 
 	// wg.Wait()
