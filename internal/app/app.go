@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -101,7 +103,14 @@ func (a *Application) messageHandler(message string) {
 		a.postSystemMessage(response)
 
 		if a.Mode == "AGENT" {
-			a.patcher.ParseAndApply(response)
+			// a.patcher.ParseAndApply(response)
+			if err := a.patcher.ParseAndApply(response); err != nil {
+				a.setState(ui.StateError)
+				a.setError(fmt.Errorf("patch apply error: %w", err))
+				a.postSystemMessage("Patch apply failed: " + err.Error())
+				return
+			}
+			a.runSanityCheck()
 		}
 	})
 
@@ -198,4 +207,34 @@ func (a *Application) getLastError() error {
 	a.stateMu.RLock()
 	defer a.stateMu.RUnlock()
 	return a.lastError
+}
+
+func (a *Application) runSanityCheck() {
+	a.postSystemMessage("Running sanity check: go vet ./...")
+	cmd := exec.Command("go", "vet", "./...")
+	cmd.Dir = a.baseDir
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	out := strings.TrimSpace(stdout.String())
+	errOut := strings.TrimSpace(stderr.String())
+
+	if err != nil {
+		a.setState(ui.StateError)
+		combined := strings.TrimSpace(strings.Join([]string{out, errOut}, "\n"))
+		if combined == "" {
+			combined = err.Error()
+		}
+		a.setError(fmt.Errorf("go vet failed: %s", combined))
+		a.postSystemMessage("go vet failed:\n" + combined)
+		return
+	}
+
+	a.setState(ui.StateHealthy)
+	if out != "" || errOut != "" {
+		a.postSystemMessage("go vet output:\n" + strings.TrimSpace(strings.Join([]string{out, errOut}, "\n")))
+	} else {
+		a.postSystemMessage("go vet passed with no issues.")
+	}
 }
