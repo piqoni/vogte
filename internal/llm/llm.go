@@ -130,7 +130,6 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 	}
 
 	response, err := c.sendChatRequest(request)
-	log.Printf("first response to get list of files: %s", response)
 	if err := os.WriteFile("llm.log", []byte(response), 0644); err != nil {
 		fmt.Printf("Error writing to file: %v\n", err)
 	}
