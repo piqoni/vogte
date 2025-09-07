@@ -84,6 +84,7 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 	var context string
 	var removals []string
 	var additions []string
+	var isAddFile bool
 
 	i := 0
 	for i < len(lines) {
@@ -94,7 +95,7 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 			continue
 		}
 
-		if strings.HasPrefix(line, "*** Update File:") { // || strings.HasPrefix(line, "*** Add File:"
+		if strings.HasPrefix(line, "*** Update File:") || strings.HasPrefix(line, "*** Add File:") {
 			// Extract filename
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) != 2 {
@@ -102,7 +103,41 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 			}
 			filename = strings.TrimSpace(strings.TrimRight(parts[1], " ***"))
 			// filename = strings.TrimSpace(parts[1])
+			isAddFile = strings.HasPrefix(line, "*** Add File:")
 			i++
+			// If it's an Add File patch, collect content until End Patch
+			if isAddFile {
+				for i < len(lines) {
+					changeLine := lines[i]
+					trimmedChange := strings.TrimSpace(changeLine)
+
+					if strings.HasPrefix(trimmedChange, "*** End Patch") {
+						break
+					}
+
+					// Some models might include a stray @@ line; ignore it for add-file
+					if strings.HasPrefix(trimmedChange, "@@") {
+						i++
+						continue
+					}
+
+					// Prefer + prefixed lines, but also accept raw lines
+					if strings.HasPrefix(changeLine, "+") {
+						additions = append(additions, changeLine[1:])
+					} else if strings.HasPrefix(changeLine, "-") {
+						// ignore removals for Add File blocks
+					} else {
+						// treat as literal content line
+						additions = append(additions, changeLine)
+					}
+					i++
+				}
+				if filename == "" {
+					return fmt.Errorf("no filename specified in patch")
+				}
+
+				return pc.applyPatch(filename, "", nil, additions)
+			}
 			continue
 		}
 
@@ -199,6 +234,10 @@ func (pc *Patcher) applyPatch(filename, context string, removals, additions []st
 		if contextIndex == -1 {
 			return fmt.Errorf("context not found: %s", context)
 		}
+
+		// if err := os.WriteFile("debug2.log", []byte(strconv.Itoa(contextIndex)), 0644); err != nil {
+		// fmt.Printf("Error writing to file: %v\n", err)
+		// }
 
 		newLines = pc.applyChangesAfterContext(lines, contextIndex, removals, additions)
 	}
