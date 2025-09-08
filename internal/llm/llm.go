@@ -24,7 +24,7 @@ func New(cfg *config.Config) *Client {
 	return &Client{
 		config: cfg,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout: 120 * time.Second,
 		},
 		baseDir: ".",
 	}
@@ -91,9 +91,9 @@ func (c *Client) SendMessage(userMessage, projectStructure, mode string) (string
 	}
 
 	// TODO: decide what to do when no list of files is returned
-	if len(fileList) == 0 {
-		return "", fmt.Errorf("first step didnt return any file from the llm, inspect your user prompt")
-	}
+	// if len(fileList) == 0 {
+	// return "", fmt.Errorf("first step didnt return any file from the llm, inspect your user prompt")
+	// }
 	// Step 2: Get full content of required files
 	fullFiles, err := c.getFileContents(fileList)
 	if err != nil {
@@ -203,10 +203,23 @@ Please generate a patch to complete the requested task. Use this EXACT format th
 +another new line to add
 *** End Patch ***
 
+To create a new file, use this format (no @@ line):
+
+*** Begin Patch ***
+*** Add File: path/to/newfile.go ***
++package mypkg
++
++import "fmt"
++
++func Hello() {
++    fmt.Println("hello")
++}
+*** End Patch ***
+
 CRITICAL REQUIREMENTS:
 1. Always provide the exact file path relative to the project root
 2. Use context lines to help locate where changes should be made
-3. For new files, omit the context line and removal lines
+3. For new files, use "*** Add File: <path> ***" and omit the @@ context line and removal lines
 4. Preserve indentation and formatting
 5. Only modify what's necessary to fulfill the request
 6. If creating new files, start with appropriate package declaration
