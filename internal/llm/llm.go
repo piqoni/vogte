@@ -192,7 +192,7 @@ Full File Contents:
 	}
 
 	promptBuilder.WriteString(`
-Please generate a patch to complete the requested task. Use this EXACT format that matches the patchcoder API:
+Please generate a patch to complete the requested task. Use this EXACT format:
 
 *** Begin Patch ***
 *** Update File: filename.go ***
@@ -284,32 +284,11 @@ func (c *Client) sendSimpleMessage(userMessage, projectStructure string) (string
 func (c *Client) buildSystemPrompt(projectStructure string) string {
 	return fmt.Sprintf(`You are an expert Go developer helping to modify a Go project. You have been provided with the current project structure below.
 
-When making changes, please use the following patch format:
-
-*** Begin Patch ***
-*** Update File: filename.go ***
-@@ context line that helps locate where changes should be made @@
--old line to remove
--another old line to remove
-+new line to add
-+another new line to add
-*** End Patch ***
-
-Guidelines:
-1. Always provide the exact file path relative to the project root
-2. Use context lines to help locate where changes should be made
-3. For new files, omit the context line and removal lines
-4. Preserve indentation and formatting
-5. Only modify what's necessary to fulfill the request
-6. If creating new files, start with appropriate package declaration
-7. Ensure all imports are properly handled
-8. Consider Go best practices and idiomatic code
-
 Current project structure:
 
 %s
 
-Please analyze the user's request and provide the necessary changes using the patch format above.`, projectStructure)
+Please analyze the user's request and provide the necessary help to fulfill their request.`, projectStructure)
 }
 
 func (c *Client) sendChatRequest(request ChatRequest) (string, error) {
