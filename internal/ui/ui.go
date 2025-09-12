@@ -186,9 +186,9 @@ func (ui *UI) colorizeText(text string) string {
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmedLine, "+") {
-			colorizedLines = append(colorizedLines, "[black:green]"+line+"[-:-]")
+			colorizedLines = append(colorizedLines, "[black:green]+[-:-]"+line[1:])
 		} else if strings.HasPrefix(trimmedLine, "-") {
-			colorizedLines = append(colorizedLines, "[black:red]"+line+"[-:-]")
+			colorizedLines = append(colorizedLines, "[black:red]-[-:-]"+line[1:])
 		} else {
 			colorizedLines = append(colorizedLines, line)
 		}
