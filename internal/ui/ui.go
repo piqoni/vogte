@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -29,7 +30,7 @@ func (s ProjectState) Emojify() string {
 type UI struct {
 	app          *tview.Application
 	root         *tview.Flex
-	chatView     *tview.TextArea
+	chatView     *tview.TextView
 	inputField   *tview.TextArea
 	statusBar    *tview.TextView
 	onMessage    func(string)
@@ -37,6 +38,7 @@ type UI struct {
 	currentMode  string
 	currentState ProjectState
 	baseDir      string
+	chatBuffer   string
 }
 
 func New(app *tview.Application, onMessage func(string)) *UI {
@@ -121,7 +123,7 @@ func (ui *UI) initComponents() {
 	// Initialize the status bar text
 	ui.RefreshStatusBar()
 
-	ui.chatView = tview.NewTextArea().SetWrap(true)
+	ui.chatView = tview.NewTextView().SetWrap(true).SetDynamicColors(true)
 	ui.chatView.SetBorder(false)
 	ui.addLogo()
 
@@ -133,8 +135,7 @@ func (ui *UI) initComponents() {
 			if true { //FIXME event.Modifiers()&tcell.ModCtrl != 0 {
 				message := ui.inputField.GetText()
 				text := fmt.Sprintf("\n You: %s", message)
-				currentText := ui.chatView.GetText()
-				ui.chatView.SetText(currentText+text, true)
+				ui.AppendChatText(text)
 				ui.onMessage(message)
 				ui.inputField.SetText("", false)
 				return nil
@@ -171,18 +172,39 @@ func (ui *UI) addLogo() {
   ╚████╔╝  ╚██████╔╝ ╚███████║   ██║    ███████╗
    ╚═══╝    ╚═════╝   ╚══════╝   ╚═╝    ╚══════╝
 	 `
-	ui.chatView.SetText(logo, false)
+	ui.SetChatText(logo)
 }
 
 func (ui *UI) GetChatText() string {
-	return ui.chatView.GetText()
+	return ui.chatBuffer
+}
+
+func (ui *UI) colorizeText(text string) string {
+	lines := strings.Split(text, "\n")
+	var colorizedLines []string
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "+") {
+			colorizedLines = append(colorizedLines, "[black:green]"+line+"[-:-]")
+		} else if strings.HasPrefix(trimmedLine, "-") {
+			colorizedLines = append(colorizedLines, "[black:red]"+line+"[-:-]")
+		} else {
+			colorizedLines = append(colorizedLines, line)
+		}
+	}
+
+	return strings.Join(colorizedLines, "\n")
 }
 
 func (ui *UI) SetChatText(text string) {
-	ui.chatView.SetText(text, true)
+	ui.chatBuffer = text
+	colorizedText := ui.colorizeText(text)
+	ui.chatView.SetText(colorizedText)
 }
 
 func (ui *UI) AppendChatText(text string) {
-	currentText := ui.chatView.GetText()
-	ui.chatView.SetText(currentText+text, true)
+	ui.chatBuffer += text
+	colorizedText := ui.colorizeText(ui.chatBuffer)
+	ui.chatView.SetText(colorizedText)
 }
