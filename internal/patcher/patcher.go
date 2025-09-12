@@ -102,6 +102,7 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 				return fmt.Errorf("invalid file specification: %s", line)
 			}
 			filename = strings.TrimSpace(strings.TrimRight(parts[1], " ***"))
+			// filename = strings.TrimSpace(parts[1])
 			isAddFile = strings.HasPrefix(line, "*** Add File:")
 			i++
 
@@ -115,16 +116,19 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 						break
 					}
 
+					// Some models might include a stray @@ line; ignore it for add-file
 					if strings.HasPrefix(trimmedChange, "@@") {
 						i++
 						continue
 					}
 
+					// Prefer + prefixed lines, but also accept raw lines
 					if strings.HasPrefix(changeLine, "+") {
 						additions = append(additions, changeLine[1:])
 					} else if strings.HasPrefix(changeLine, "-") {
-						// ignore removals for Add File
+						// ignore removals for Add File blocks
 					} else {
+						// treat as literal content line
 						additions = append(additions, changeLine)
 					}
 					i++
@@ -132,14 +136,18 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 				if filename == "" {
 					return fmt.Errorf("no filename specified in patch")
 				}
+
 				return pc.applyPatch(filename, "", nil, additions)
 			}
 			continue
 		}
 
 		if strings.HasPrefix(line, "@@") {
+			// Extract context (everything after @@)
+			context = strings.TrimSpace(line[2:])
 			i++
-			// Collect hunk lines until End Patch
+
+			// Parse the changes
 			for i < len(lines) {
 				changeLine := lines[i]
 				trimmedChange := strings.TrimSpace(changeLine)
@@ -148,14 +156,13 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 					break
 				}
 
-				switch {
-				case strings.HasPrefix(changeLine, "-"):
+				if strings.HasPrefix(changeLine, "-") {
+					// Removal line - preserve original indentation
 					removals = append(removals, changeLine[1:])
-				case strings.HasPrefix(changeLine, "+"):
+				} else if strings.HasPrefix(changeLine, "+") {
+					// Addition line - preserve original indentation
 					additions = append(additions, changeLine[1:])
-				case strings.HasPrefix(changeLine, " "):
-					// Use *last* unchanged line as context anchor
-					context = strings.TrimSpace(changeLine[1:])
+
 				}
 				i++
 			}
