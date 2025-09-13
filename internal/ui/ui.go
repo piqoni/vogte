@@ -117,7 +117,7 @@ func (ui *UI) RefreshStatusBar() {
 	agentStyle := "WRITE"
 
 	if ui.currentMode == "ASK" {
-		askStyle = "[::bu] ASK [::-]"
+		askStyle = "[::bu]ASK[::-]"
 	} else {
 		agentStyle = "[::bu]WRITE[::-]"
 	}
@@ -134,7 +134,7 @@ func (ui *UI) RefreshStatusBar() {
 	}
 
 	statusText := fmt.Sprintf(
-		"%s Status: %s | Dir: %s | Model: %s | Mode: [\" ask \"]%s[\"ask\"] ↔  [\"agent\"]%s[\"agent\"]",
+		"%s Status: %s | Dir: %s | Model: %s | Mode: [\"ask\"]%s[\"ask\"] - [\"agent\"]%s[\"agent\"]",
 		loadingIndicator,
 		ui.currentState.Emojify(),
 		dirDisplay,
@@ -157,11 +157,14 @@ func (ui *UI) initComponents() {
 				region := added[0]
 				if region == "ask" && ui.currentMode != "ASK" {
 					ui.SetMode("ASK")
+					ui.AppendChatText("ASK")
 					if ui.onModeChange != nil {
 						ui.onModeChange("ASK")
 					}
 				} else if region == "agent" && ui.currentMode != "AGENT" {
 					ui.SetMode("AGENT")
+					ui.AppendChatText("AGENT")
+
 					if ui.onModeChange != nil {
 						ui.onModeChange("AGENT")
 					}

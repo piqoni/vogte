@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -78,11 +77,11 @@ func (c *Client) SendMessage(userMessage, projectStructure, mode string) (string
 		return "", fmt.Errorf("LLM API key not configured")
 	}
 
-	if mode == "ASK" {
-		log.Print("SIMPLE ASK PATH")
-		log.Printf("userMessage: %s, projectStructure: %s", userMessage, projectStructure)
-		return c.sendSimpleMessage(userMessage, projectStructure)
-	}
+	// if mode == "ASK" {
+	// 	log.Print("SIMPLE ASK PATH")
+	// 	log.Printf("userMessage: %s, projectStructure: %s", userMessage, projectStructure)
+	// 	return c.sendSimpleMessage(userMessage, projectStructure)
+	// }
 
 	// Step 1: Ask LLM which files it needs
 	fileList, err := c.askForRequiredFiles(userMessage, projectStructure)
