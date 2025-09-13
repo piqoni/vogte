@@ -74,22 +74,20 @@ func (a *Application) Run() error {
 func (a *Application) messageHandler(message string) {
 	if strings.ToLower(message) == "quit" || message == "q" || strings.ToLower(message) == "exit" {
 		a.app.Stop()
+		return
 	}
-	// switch a.Mode {
-	// case "ASK":
-	// a.handleAskMode(message)
-	// case "AGENT":
-	// a.handleAgentMode(message)
-	// }
 
-	var wg sync.WaitGroup
+	a.ui.StartLoading()
 
-	wg.Go(func() {
+	go func() {
+		defer a.ui.StopLoading()
+
 		structure, err := a.parser.ParseProject(a.baseDir)
-		// a.setState(ui.StateError) // remove me, just a test
 		if err != nil {
 			a.setState(ui.StateError)
 			a.setError(fmt.Errorf("Could not parse the project: %w ", err))
+			a.postSystemMessage("ERROR: Could not parse the project: " + err.Error())
+			return
 		}
 
 		// Send to LLM
@@ -97,28 +95,23 @@ func (a *Application) messageHandler(message string) {
 		if err != nil {
 			a.setState(ui.StateError)
 			a.setError(fmt.Errorf("LLM error: %w", err))
-			a.postSystemMessage(err.Error())
+			a.postSystemMessage("ERROR: " + err.Error())
+			return
 		}
-		a.postSystemMessage(a.Mode)
+
+		a.postSystemMessage("Mode: " + a.Mode)
 		a.postSystemMessage(response)
 
 		if a.Mode == "AGENT" {
-			// a.patcher.ParseAndApply(response)
 			if err := a.patcher.ParseAndApply(response); err != nil {
 				a.setState(ui.StateError)
 				a.setError(fmt.Errorf("patch apply error: %w", err))
-				a.postSystemMessage("Patch apply failed: " + err.Error())
+				a.postSystemMessage("ERROR: Patch apply failed: " + err.Error())
 				return
 			}
 			a.runSanityCheck()
 		}
-	})
-
-	// wg.Wait()
-	// if a.lastError != nil {
-	// a.postSystemMessage("ERROR: " + a.lastError.Error())
-	// }
-
+	}()
 }
 
 func (app *Application) modeChangeHandler(newMode string) {

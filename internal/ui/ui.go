@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -39,6 +40,10 @@ type UI struct {
 	currentState ProjectState
 	baseDir      string
 	chatBuffer   string
+	// spinner animation
+	isLoading      bool
+	animationFrame int
+	stopAnimation  chan struct{}
 }
 
 func New(app *tview.Application, onMessage func(string)) *UI {
@@ -50,6 +55,38 @@ func New(app *tview.Application, onMessage func(string)) *UI {
 	ui.initComponents()
 	ui.setupLayout()
 	return ui
+}
+
+func (ui *UI) StartLoading() {
+	if ui.isLoading {
+		return // Already loading
+	}
+	ui.isLoading = true
+	ui.stopAnimation = make(chan struct{})
+	animationChars := []rune{'|', '/', '-', '\\'}
+
+	go func() {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				ui.animationFrame = (ui.animationFrame + 1) % len(animationChars)
+				ui.app.QueueUpdateDraw(ui.RefreshStatusBar)
+			case <-ui.stopAnimation:
+				return
+			}
+		}
+	}()
+}
+
+func (ui *UI) StopLoading() {
+	if !ui.isLoading {
+		return
+	}
+	ui.isLoading = false
+	close(ui.stopAnimation)
+	ui.app.QueueUpdateDraw(ui.RefreshStatusBar)
 }
 
 func (ui *UI) SetModeChangeCallback(callback func(mode string)) {
@@ -76,21 +113,28 @@ func (ui *UI) SetState(state ProjectState) {
 
 func (ui *UI) RefreshStatusBar() {
 	askStyle := "ASK"
-	agentStyle := "AGENT"
+	agentStyle := "WRITE"
 
 	if ui.currentMode == "ASK" {
-		askStyle = "[::bu]ASK[::-]"
+		askStyle = "[::bu] ASK [::-]"
 	} else {
-		agentStyle = "[::bu]AGENT[::-]"
+		agentStyle = "[::bu]WRITE[::-]"
+	}
+
+	loadingIndicator := ""
+	if ui.isLoading {
+		animationChars := []rune{'|', '/', '-', '\\'}
+		loadingIndicator = " " + string(animationChars[ui.animationFrame])
 	}
 
 	statusText := fmt.Sprintf(
-		"Model: %s | Status: %s | Mode: [\"ask\"]%s[\"ask\"] ↔ [\"agent\"]%s[\"agent\"] | Dir: %s ",
-		"gpt-5",
+		"%s Status: %s | Dir: %s | Model: %s | Mode: [\" ask \"]%s[\"ask\"] ↔  [\"agent\"]%s[\"agent\"]",
+		loadingIndicator,
 		ui.currentState.Emojify(),
+		ui.baseDir,
+		"gpt-5",
 		askStyle,
 		agentStyle,
-		ui.baseDir,
 	)
 
 	ui.statusBar.SetText(statusText)
