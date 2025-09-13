@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -127,11 +128,16 @@ func (ui *UI) RefreshStatusBar() {
 		loadingIndicator = " " + string(animationChars[ui.animationFrame])
 	}
 
+	dirDisplay := ui.baseDir
+	if dirDisplay != "" {
+		dirDisplay = filepath.Base(dirDisplay)
+	}
+
 	statusText := fmt.Sprintf(
 		"%s Status: %s | Dir: %s | Model: %s | Mode: [\" ask \"]%s[\"ask\"] ↔  [\"agent\"]%s[\"agent\"]",
 		loadingIndicator,
 		ui.currentState.Emojify(),
-		ui.baseDir,
+		dirDisplay,
 		"gpt-5",
 		askStyle,
 		agentStyle,

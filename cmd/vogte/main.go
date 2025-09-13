@@ -26,6 +26,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
 	"github.com/piqoni/vogte/internal/app"
 	"github.com/piqoni/vogte/internal/cli"
@@ -33,9 +34,14 @@ import (
 )
 
 func main() {
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get current working directory: %v", err)
+	}
+
 	askPtr := flag.Bool("ask", false, "Start in ASK mode")
 	configPtr := flag.String("config", "", "Path to config file")
-	dirPtr := flag.String("dir", ".", "The directory to analyze")
+	dirPtr := flag.String("dir", pwd, "The directory to analyze")
 	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
 	flag.Parse()
 
