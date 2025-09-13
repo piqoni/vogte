@@ -141,18 +141,6 @@ func (app *Application) GetMode() string {
 	return app.Mode
 }
 
-// func (app *Application) handleAskMode(message string) { // todo
-// 	response := fmt.Sprintf("\n Assistant (ASK): %s", message)
-// 	currentText := app.ui.GetChatText()
-// 	app.ui.SetChatText(currentText + response)
-// }
-
-func (app *Application) handleAgentMode(message string) { // todo
-	response := fmt.Sprintf("\n Agent (AGENT): %s", message)
-	currentText := app.ui.GetChatText()
-	app.ui.SetChatText(currentText + response)
-}
-
 func (a *Application) Parse() (string, error) {
 	return a.parser.ParseProject(a.baseDir)
 }
