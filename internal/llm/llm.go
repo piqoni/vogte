@@ -116,6 +116,10 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 
 	messages := []Message{
 		{
+			Role:    "system",
+			Content: "You are a precise coding assistant. Always follow instructions exactly.",
+		},
+		{
 			Role:    "user",
 			Content: prompt,
 		},
@@ -125,11 +129,11 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 		Model:    c.config.LLM.Model,
 		Messages: messages,
 		// Temperature:         0.1,
-		MaxCompletionTokens: 500, // Shorter response expected
+		// MaxCompletionTokens: 500, // Shorter response expected
 	}
 
 	response, err := c.sendChatRequest(request)
-	if err := os.WriteFile("llm.log", []byte(response), 0644); err != nil {
+	if err := os.WriteFile("llm.log", []byte(prompt+"\n\n"+response), 0644); err != nil {
 		fmt.Printf("Error writing to file: %v\n", err)
 	}
 	if err != nil {
@@ -250,7 +254,7 @@ If the function signature is complex, try using a simpler context or just the li
 		Model:    c.config.LLM.Model,
 		Messages: messages,
 		// Temperature:         0.1,
-		MaxCompletionTokens: 4000,
+		// MaxCompletionTokens: 4000,
 	}
 
 	return c.sendChatRequest(request)
