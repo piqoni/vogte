@@ -49,6 +49,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 	app.ui.SetModeChangeCallback(app.modeChangeHandler)
 	app.ui.SetMode(app.Mode)
 	app.ui.SetBaseDir(baseDir)
+	app.ui.SetModelName(cfg.LLM.Model)
 	return app
 }
 
@@ -98,6 +99,7 @@ func (a *Application) messageHandler(message string) {
 			a.postSystemMessage("ERROR: " + err.Error())
 			return
 		}
+		// response := manualPatch
 
 		a.postSystemMessage("Mode: " + a.Mode)
 		a.postSystemMessage(response)

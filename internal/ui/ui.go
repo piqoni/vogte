@@ -40,7 +40,9 @@ type UI struct {
 	currentMode  string
 	currentState ProjectState
 	baseDir      string
-	chatBuffer   string
+	modelName    string
+
+	chatBuffer string
 	// spinner animation
 	isLoading      bool
 	animationFrame int
@@ -103,6 +105,10 @@ func (ui *UI) SetBaseDir(dir string) {
 	ui.baseDir = dir
 	ui.RefreshStatusBar()
 }
+func (ui *UI) SetModelName(name string) {
+	ui.modelName = name
+	ui.RefreshStatusBar()
+}
 
 func (ui *UI) GetMode() string {
 	return ui.currentMode
@@ -111,7 +117,6 @@ func (ui *UI) SetState(state ProjectState) {
 	ui.currentState = state
 	ui.RefreshStatusBar()
 }
-
 func (ui *UI) RefreshStatusBar() {
 	askStyle := "ASK"
 	agentStyle := "WRITE"
@@ -133,12 +138,17 @@ func (ui *UI) RefreshStatusBar() {
 		dirDisplay = filepath.Base(dirDisplay)
 	}
 
+	modelDisplay := ui.modelName
+	if strings.TrimSpace(modelDisplay) == "" {
+		modelDisplay = "-"
+	}
+
 	statusText := fmt.Sprintf(
 		"%s Status: %s | Dir: %s | Model: %s | Mode: [\"ask\"]%s[\"ask\"] - [\"agent\"]%s[\"agent\"]",
 		loadingIndicator,
 		ui.currentState.Emojify(),
 		dirDisplay,
-		"gpt-5",
+		modelDisplay,
 		askStyle,
 		agentStyle,
 	)

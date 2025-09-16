@@ -43,12 +43,18 @@ func main() {
 	configPtr := flag.String("config", "", "Path to config file")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
 	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
+	modelPtr := flag.String("model", "", "LLM model name (overrides config)")
 	flag.Parse()
 
 	cfg := config.Load(*configPtr)
 	if cfg == nil {
 		log.Fatal("Failed to load configuration")
 	}
+
+	if *modelPtr != "" {
+		cfg.LLM.Model = *modelPtr
+	}
+
 	application := app.New(cfg, *dirPtr, *outputPtr)
 
 	if *askPtr {
@@ -72,5 +78,4 @@ func main() {
 	if err := application.Run(); err != nil {
 		log.Printf("Application error: %v", err)
 	}
-
 }
