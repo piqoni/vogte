@@ -41,7 +41,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 		patcher:    patcher.New(baseDir),
 		llm:        llm.New(cfg),
 		outputFile: outputFile,
-		Mode:       "AGENT",
+		Mode:       "ASK",
 		state:      ui.StateUnknown,
 		stateCh:    make(chan ui.ProjectState, 1),
 	}

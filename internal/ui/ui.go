@@ -53,7 +53,7 @@ func New(app *tview.Application, onMessage func(string)) *UI {
 	ui := &UI{
 		app:         app,
 		onMessage:   onMessage,
-		currentMode: "AGENT",
+		currentMode: "ASK",
 	}
 	ui.initComponents()
 	ui.setupLayout()
@@ -119,12 +119,12 @@ func (ui *UI) SetState(state ProjectState) {
 }
 func (ui *UI) RefreshStatusBar() {
 	askStyle := "ASK"
-	agentStyle := "WRITE"
+	agentStyle := "AGENT"
 
 	if ui.currentMode == "ASK" {
 		askStyle = "[::bu]ASK[::-]"
 	} else {
-		agentStyle = "[::bu]WRITE[::-]"
+		agentStyle = "[::bu]AGENT[::-]"
 	}
 
 	loadingIndicator := ""
