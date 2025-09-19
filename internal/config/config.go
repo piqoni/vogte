@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -38,8 +39,13 @@ func defaultConfig() *Config {
 	if cfg.LLM.Model == "" {
 		cfg.LLM.Model = "gpt-5"
 	}
-	cfg.LLM.Endpoint = "https://api.openai.com/v1/chat/completions"
-	cfg.LLM.APIKey = os.Getenv("OPENAI_API_KEY")
+	if strings.HasPrefix(strings.ToLower(cfg.LLM.Model), "claude-") {
+		cfg.LLM.Endpoint = "https://api.anthropic.com/v1/messages"
+		cfg.LLM.APIKey = os.Getenv("ANTHROPIC_API_KEY")
+	} else {
+		cfg.LLM.Endpoint = "https://api.openai.com/v1/chat/completions"
+		cfg.LLM.APIKey = os.Getenv("OPENAI_API_KEY")
+	}
 
 	return cfg
 }

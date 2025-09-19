@@ -1,10 +1,7 @@
 package llm
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -27,46 +24,6 @@ func New(cfg *config.Config) *Client {
 		},
 		baseDir: ".",
 	}
-}
-
-// Message represents a chat message
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// ChatRequest represents the request payload for chat completion
-type ChatRequest struct {
-	Model               string    `json:"model"`
-	Messages            []Message `json:"messages"`
-	Temperature         float64   `json:"temperature,omitempty"`
-	MaxCompletionTokens int       `json:"max_completion_tokens,omitempty"`
-}
-
-// ChatResponse represents the response from chat completion
-type ChatResponse struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Created int64  `json:"created"`
-	Model   string `json:"model"`
-	Choices []struct {
-		Index   int `json:"index"`
-		Message struct {
-			Role    string `json:"role"`
-			Content string `json:"content"`
-		} `json:"message"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
-	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-	Error *struct {
-		Message string `json:"message"`
-		Type    string `json:"type"`
-		Code    string `json:"code"`
-	} `json:"error,omitempty"`
 }
 
 // SendMessage sends a message to the LLM using a two-step approach:
@@ -115,14 +72,18 @@ Please respond with ONLY a comma-separated list of the specific files you need t
 Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 
 	messages := []Message{
-		{
-			Role:    "system",
-			Content: "You are a precise coding assistant. Always follow instructions exactly.",
-		},
+
 		{
 			Role:    "user",
 			Content: prompt,
 		},
+	}
+
+	if !isAnthropicModel(c.config.LLM.Model) {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: "You are a precise coding assistant. Always follow instructions exactly.",
+		})
 	}
 
 	request := ChatRequest{
@@ -260,83 +221,45 @@ If the function signature is complex, try using a simpler context or just the li
 	return c.sendChatRequest(request)
 }
 
-func (c *Client) sendSimpleMessage(userMessage, projectStructure string) (string, error) {
-	systemPrompt := c.buildSystemPrompt(projectStructure)
+// func (c *Client) sendSimpleMessage(userMessage, projectStructure string) (string, error) {
+// 	systemPrompt := c.buildSystemPrompt(projectStructure)
 
-	messages := []Message{
-		{
-			Role:    "system",
-			Content: systemPrompt,
-		},
-		{
-			Role:    "user",
-			Content: userMessage,
-		},
-	}
+// 	messages := []Message{
+// 		{
+// 			Role:    "system",
+// 			Content: systemPrompt,
+// 		},
+// 		{
+// 			Role:    "user",
+// 			Content: userMessage,
+// 		},
+// 	}
 
-	request := ChatRequest{
-		Model:    c.config.LLM.Model,
-		Messages: messages,
-		// Temperature:         0.1,
-		MaxCompletionTokens: 4000,
-	}
+// 	request := ChatRequest{
+// 		Model:    c.config.LLM.Model,
+// 		Messages: messages,
+// 		// Temperature:         0.1,
+// 		MaxCompletionTokens: 4000,
+// 	}
 
-	return c.sendChatRequest(request)
-}
+// 	return c.sendChatRequest(request)
+// }
 
-func (c *Client) buildSystemPrompt(projectStructure string) string {
-	return fmt.Sprintf(`You are an expert Go developer helping to modify a Go project. You have been provided with the current project structure below.
+// func (c *Client) buildSystemPrompt(projectStructure string) string {
+// 	return fmt.Sprintf(`You are an expert Go developer helping to modify a Go project. You have been provided with the current project structure below.
 
-Current project structure:
+// Current project structure:
 
-%s
+// %s
 
-Please analyze the user's request and provide the necessary help to fulfill their request.`, projectStructure)
-}
+// Please analyze the user's request and provide the necessary help to fulfill their request.`, projectStructure)
+// }
 
 func (c *Client) sendChatRequest(request ChatRequest) (string, error) {
-	jsonData, err := json.Marshal(request)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+	if isAnthropicModel(request.Model) || strings.Contains(strings.ToLower(c.config.LLM.Endpoint), "anthropic.com") {
+		return c.sendAnthropicRequest(request)
 	}
-
-	req, err := http.NewRequest("POST", c.config.LLM.Endpoint, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.config.LLM.APIKey)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var response ChatResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	if response.Error != nil {
-		return "", fmt.Errorf("API error: %s", response.Error.Message)
-	}
-
-	if len(response.Choices) == 0 {
-		return "", fmt.Errorf("no response choices received")
-	}
-
-	return response.Choices[0].Message.Content, nil
+	return c.sendOpenAIRequest(request)
 }
 
 func (c *Client) ValidateConfig() error {
