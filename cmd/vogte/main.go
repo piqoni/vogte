@@ -32,13 +32,11 @@ func main() {
 		cfg.SetModel(*modelPtr)
 	}
 
-	application := app.New(cfg, *dirPtr, *outputPtr)
-
+	initialMode := "ASK"
 	if *agentPtr {
-		application.SetMode("AGENT")
-	} else {
-		application.SetMode("ASK")
+		initialMode = "AGENT"
 	}
+	application := app.New(cfg, *dirPtr, *outputPtr, initialMode)
 
 	outputFlag := flag.Lookup("output")
 	wasOutputPassed := outputFlag.Value.String() != outputFlag.DefValue

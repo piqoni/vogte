@@ -35,7 +35,7 @@ type Application struct {
 	lastError error
 }
 
-func New(cfg *config.Config, baseDir string, outputFile string) *Application {
+func New(cfg *config.Config, baseDir string, outputFile string, mode string) *Application {
 	app := &Application{
 		baseDir:    baseDir,
 		app:        tview.NewApplication(),
@@ -43,7 +43,7 @@ func New(cfg *config.Config, baseDir string, outputFile string) *Application {
 		patcher:    patcher.New(baseDir),
 		llm:        llm.New(cfg),
 		outputFile: outputFile,
-		Mode:       "ASK",
+		Mode:       mode,
 		state:      ui.StateUnknown,
 		stateCh:    make(chan ui.ProjectState, 1),
 	}
