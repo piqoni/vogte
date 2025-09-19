@@ -14,6 +14,27 @@ type Config struct {
 	} `json:"llm"`
 }
 
+func (cfg *Config) SetModel(model string) {
+	cfg.LLM.Model = model
+	cfg.ApplyProviderByModel()
+}
+
+// If model starts with "claude-", it will use Anthropic endpoint and ANTHROPIC_API_KEY
+// Otherwise, it will use OpenAI endpoint and OPENAI_API_KEY (if present).
+func (cfg *Config) ApplyProviderByModel() {
+	if strings.HasPrefix(strings.ToLower(cfg.LLM.Model), "claude-") {
+		cfg.LLM.Endpoint = "https://api.anthropic.com/v1/messages"
+		if k := os.Getenv("ANTHROPIC_API_KEY"); k != "" {
+			cfg.LLM.APIKey = k
+		}
+	} else {
+		cfg.LLM.Endpoint = "https://api.openai.com/v1/chat/completions"
+		if k := os.Getenv("OPENAI_API_KEY"); k != "" {
+			cfg.LLM.APIKey = k
+		}
+	}
+}
+
 func Load(configPath string) *Config {
 	cfg := defaultConfig()
 
@@ -39,13 +60,6 @@ func defaultConfig() *Config {
 	if cfg.LLM.Model == "" {
 		cfg.LLM.Model = "gpt-5"
 	}
-	if strings.HasPrefix(strings.ToLower(cfg.LLM.Model), "claude-") {
-		cfg.LLM.Endpoint = "https://api.anthropic.com/v1/messages"
-		cfg.LLM.APIKey = os.Getenv("ANTHROPIC_API_KEY")
-	} else {
-		cfg.LLM.Endpoint = "https://api.openai.com/v1/chat/completions"
-		cfg.LLM.APIKey = os.Getenv("OPENAI_API_KEY")
-	}
-
+	cfg.ApplyProviderByModel()
 	return cfg
 }

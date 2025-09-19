@@ -167,13 +167,13 @@ func (ui *UI) initComponents() {
 				region := added[0]
 				if region == "ask" && ui.currentMode != "ASK" {
 					ui.SetMode("ASK")
-					ui.AppendChatText("ASK")
+					ui.AppendChatText("\nMode set to ASK")
 					if ui.onModeChange != nil {
 						ui.onModeChange("ASK")
 					}
 				} else if region == "agent" && ui.currentMode != "AGENT" {
 					ui.SetMode("AGENT")
-					ui.AppendChatText("AGENT")
+					ui.AppendChatText("\nMode set to AGENT")
 
 					if ui.onModeChange != nil {
 						ui.onModeChange("AGENT")
@@ -191,7 +191,7 @@ func (ui *UI) initComponents() {
 	ui.addLogo()
 
 	ui.inputField = tview.NewTextArea().SetWrap(true)
-	ui.inputField.SetBorder(true).SetTitle("Message: (Ctrl+Enter to Submit) ")
+	ui.inputField.SetBorder(true).SetTitle("Message: ")
 	ui.inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEnter:

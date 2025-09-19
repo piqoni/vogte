@@ -94,9 +94,9 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 	}
 
 	response, err := c.sendChatRequest(request)
-	if err := os.WriteFile("llm.log", []byte(prompt+"\n\n"+response), 0644); err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
-	}
+	// if err := os.WriteFile("llm.log", []byte(prompt+"\n\n"+response), 0644); err != nil { // TODO debug log
+	// fmt.Printf("Error writing to file: %v\n", err)
+	// }
 	if err != nil {
 		return nil, err
 	}

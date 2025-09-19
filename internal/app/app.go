@@ -3,7 +3,9 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -112,6 +114,16 @@ func (a *Application) messageHandler(message string) {
 				return
 			}
 			a.runSanityCheck()
+		}
+
+		// Append to .vogte/chatbot.log
+		logDir := filepath.Join(".", ".vogte")
+		if err := os.MkdirAll(logDir, 0755); err == nil {
+			logPath := filepath.Join(logDir, "chatbot.log")
+			if f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err == nil {
+				_, _ = f.WriteString(message + "\n" + response + "\n\n\n\n\n")
+				f.Close()
+			}
 		}
 	}()
 }

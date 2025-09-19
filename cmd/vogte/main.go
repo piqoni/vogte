@@ -29,7 +29,7 @@ func main() {
 	}
 
 	if *modelPtr != "" {
-		cfg.LLM.Model = *modelPtr
+		cfg.SetModel(*modelPtr)
 	}
 
 	application := app.New(cfg, *dirPtr, *outputPtr)

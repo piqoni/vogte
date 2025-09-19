@@ -19,9 +19,9 @@ func New(baseDir string) *Patcher {
 
 func (pc *Patcher) ParseAndApply(patchContent string) error {
 
-	if err := os.WriteFile("debug.log", []byte(patchContent), 0644); err != nil {
-		fmt.Printf("Error writing to file: %v\n", err)
-	}
+	// if err := os.WriteFile("debug.log", []byte(patchContent), 0644); err != nil {
+	// fmt.Printf("Error writing to file: %v\n", err)
+	// }
 	// Handle multiple patches in a single response
 	patches := pc.splitPatches(patchContent)
 
