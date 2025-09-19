@@ -106,16 +106,6 @@ func (a *Application) messageHandler(message string) {
 		a.postSystemMessage("Mode: " + a.Mode)
 		a.postSystemMessage(response)
 
-		if a.Mode == "AGENT" {
-			if err := a.patcher.ParseAndApply(response); err != nil {
-				a.setState(ui.StateError)
-				a.setError(fmt.Errorf("patch apply error: %w", err))
-				a.postSystemMessage("ERROR: Patch apply failed: " + err.Error())
-				return
-			}
-			a.runSanityCheck()
-		}
-
 		// Append to .vogte/chatbot.log
 		logDir := filepath.Join(".", ".vogte")
 		if err := os.MkdirAll(logDir, 0755); err == nil {
@@ -124,6 +114,15 @@ func (a *Application) messageHandler(message string) {
 				_, _ = f.WriteString(message + "\n" + response + "\n\n\n\n\n")
 				f.Close()
 			}
+		}
+		if a.Mode == "AGENT" {
+			if err := a.patcher.ParseAndApply(response); err != nil {
+				a.setState(ui.StateError)
+				a.setError(fmt.Errorf("patch apply error: %w", err))
+				a.postSystemMessage("ERROR: Patch apply failed: " + err.Error())
+				return
+			}
+			a.runSanityCheck()
 		}
 	}()
 }
