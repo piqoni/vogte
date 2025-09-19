@@ -51,9 +51,8 @@ type UI struct {
 
 func New(app *tview.Application, onMessage func(string)) *UI {
 	ui := &UI{
-		app:         app,
-		onMessage:   onMessage,
-		currentMode: "ASK",
+		app:       app,
+		onMessage: onMessage,
 	}
 	ui.initComponents()
 	ui.setupLayout()
