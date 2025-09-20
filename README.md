@@ -7,6 +7,10 @@
    ╚═══╝    ╚═════╝   ╚══════╝   ╚═╝    ╚══════╝
 ❯ Your agentic terminal for existing Go codebases.
 ```
+
+<div align="center"> <img width="1000" src="https://github.com/user-attachments/assets/9345cac2-b461-40e0-8cb4-4d4163f4ea90" /></div>
+Vogte running side-by-side Zed. 
+
 # Motivation
 This is an attempt to create a language-specific tool that provides holistic repository context and helps developers build and maintain Go projects using LLMs. Some potential benefits of being language-specific:
   - Easier parsing of the repository using Abstract Syntax Trees to extract more relevant/compressed information for LLM context
