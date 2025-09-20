@@ -17,7 +17,7 @@ func main() {
 	}
 
 	agentPtr := flag.Bool("agent", false, "Start in AGENT mode")
-	configPtr := flag.String("config", "", "Path to config file")
+	configPtr := flag.String("config", "", "Path to config file. Example: vogte -config config.json ")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
 	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
 	modelPtr := flag.String("model", "", "LLM model name (overrides config)")
