@@ -60,4 +60,7 @@ Options:
 
 # No LLM API? No Problem.
 If you want to generate just the "compressed repository context of your project" so you could use it in LLMs via web ui, you can generate using:
-**vogte -output**
+```
+vogte -output project_structure.txt
+```
+(or if you want some other dir pass **-dir dirname** option)
