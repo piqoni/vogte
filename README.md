@@ -9,7 +9,7 @@
 ```
 
 <div align="center"> <img width="1000" src="https://github.com/user-attachments/assets/9345cac2-b461-40e0-8cb4-4d4163f4ea90" /></div>
-Vogte running side-by-side Zed. 
+Vogte running side-by-side Zed editor.
 
 # Motivation
 This is an attempt to create a language-specific tool that provides holistic repository context and helps developers build and maintain Go projects using LLMs. Some potential benefits of being language-specific:
@@ -33,8 +33,9 @@ This is an attempt to create a language-specific tool that provides holistic rep
 Vogte uses a two-step approach for providing tasks to the LLM. In the first step, it extracts relevant parts (structs/interfaces/methods along with signatures) from your repository and asks the LLM which files it needs in full to solve the problem expressed by the user. During this step, the LLM returns a list of files, which vogte then provides back with their full content so the LLM can apply the solution.
 
 # Install
-
+```
  go install github.com/piqoni/vogte/cmd/vogte@latest
+```
 
 # Usage
 If you have set OPENAI_API_KEY in your system and if you want to use GPT-5 then just start vogte in the directory you are interested to work on and it will use GPT-5 automatically.
