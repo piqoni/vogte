@@ -30,7 +30,7 @@ Vogte uses a two-step approach for providing tasks to the LLM. In the first step
 
 # Install
 
-
+ go install github.com/piqoni/vogte/cmd/vogte@latest
 
 # Usage
 If you have set OPENAI_API_KEY in your system and if you want to use GPT-5 then just start vogte in the directory you are interested to work on and it will use GPT-5 automatically.
@@ -51,5 +51,5 @@ Options:
 ```
 
 # No LLM API? No Problem.
-If you want to generate just the "compressed repository context of your project" so you could use it in LLMs via web ui, you can generate it using:
+If you want to generate just the "compressed repository context of your project" so you could use it in LLMs via web ui, you can generate using:
 **vogte -output**
