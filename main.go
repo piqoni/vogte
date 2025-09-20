@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/piqoni/vogte/internal/app"
-	"github.com/piqoni/vogte/internal/cli"
-	"github.com/piqoni/vogte/internal/config"
+	"github.com/piqoni/vogte/app"
+	"github.com/piqoni/vogte/cli"
+	"github.com/piqoni/vogte/config"
 )
 
 func main() {

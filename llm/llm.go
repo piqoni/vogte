@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/piqoni/vogte/internal/config"
+	"github.com/piqoni/vogte/config"
 )
 
 type Client struct {

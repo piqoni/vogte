@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/piqoni/vogte/internal/config"
-	"github.com/piqoni/vogte/internal/llm"
-	"github.com/piqoni/vogte/internal/parser"
-	"github.com/piqoni/vogte/internal/patcher"
-	"github.com/piqoni/vogte/internal/ui"
+	"github.com/piqoni/vogte/config"
+	"github.com/piqoni/vogte/llm"
+	"github.com/piqoni/vogte/parser"
+	"github.com/piqoni/vogte/patcher"
+	"github.com/piqoni/vogte/ui"
 	"github.com/rivo/tview"
 )
 

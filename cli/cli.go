@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/piqoni/vogte/internal/app"
+	"github.com/piqoni/vogte/app"
 )
 
 func Run(application *app.Application, outputPath string) error {
