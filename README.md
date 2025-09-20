@@ -34,7 +34,7 @@ Vogte uses a two-step approach for providing tasks to the LLM. In the first step
 
 # Install
 ```
- go install github.com/piqoni/vogte/cmd/vogte@latest
+ go install github.com/piqoni/vogte@latest
 ```
 
 # Usage
