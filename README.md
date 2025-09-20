@@ -38,15 +38,18 @@ Vogte uses a two-step approach for providing tasks to the LLM. In the first step
 ```
 
 # Usage
-If you have set OPENAI_API_KEY in your system and if you want to use GPT-5 then just start vogte in the directory you are interested to work on and it will use GPT-5 automatically.
-If you want to use any of the Claude models, make sure you have setup ANTHROPIC_API_KEY and start vogte with **vogte -model claude-sonnet-4-0**
+If you have set OPENAI_API_KEY in your system and if you want to use GPT-5 then just start by just writing **vogte** in the directory you are interested to work on and it will use GPT-5 automatically.
+If you want to use any of the Claude models, make sure you have setup ANTHROPIC_API_KEY and start vogte with **vogte -model claude-sonnet-4-0**.
+
+How to exit: Either by pressing Ctrl+C or by writing any of these in the message box: "q", "quite" or "exit". 
+
 
 Options:
 ```
   -agent
     	Start in AGENT mode
   -config string
-    	Path to config file
+    	Path to config file. Example: vogte -config config.json 
   -dir string
     	The directory to analyze/apply changes to
   -model string
