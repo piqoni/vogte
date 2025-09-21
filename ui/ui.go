@@ -18,17 +18,6 @@ const (
 	StateError
 )
 
-func (s ProjectState) Emojify() string {
-	switch s {
-	case StateHealthy:
-		return "🟢"
-	case StateError:
-		return "🔴"
-	default:
-		return "⚪️"
-	}
-}
-
 type UI struct {
 	app          *tview.Application
 	root         *tview.Flex
@@ -49,6 +38,8 @@ type UI struct {
 	stopAnimation  chan struct{}
 }
 
+var spinnerFrames = []rune{'⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'}
+
 func New(app *tview.Application, onMessage func(string)) *UI {
 	ui := &UI{
 		app:       app,
@@ -59,13 +50,23 @@ func New(app *tview.Application, onMessage func(string)) *UI {
 	return ui
 }
 
+func (s ProjectState) Emojify() string {
+	switch s {
+	case StateHealthy:
+		return "🟢"
+	case StateError:
+		return "🔴"
+	default:
+		return "⚪️"
+	}
+}
+
 func (ui *UI) StartLoading() {
 	if ui.isLoading {
 		return // Already loading
 	}
 	ui.isLoading = true
 	ui.stopAnimation = make(chan struct{})
-	animationChars := []rune{'|', '/', '-', '\\'}
 
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
@@ -73,7 +74,7 @@ func (ui *UI) StartLoading() {
 		for {
 			select {
 			case <-ticker.C:
-				ui.animationFrame = (ui.animationFrame + 1) % len(animationChars)
+				ui.animationFrame = (ui.animationFrame + 1) % len(spinnerFrames)
 				ui.app.QueueUpdateDraw(ui.RefreshStatusBar)
 			case <-ui.stopAnimation:
 				return
@@ -128,8 +129,7 @@ func (ui *UI) RefreshStatusBar() {
 
 	loadingIndicator := ""
 	if ui.isLoading {
-		animationChars := []rune{'|', '/', '-', '\\'}
-		loadingIndicator = " " + string(animationChars[ui.animationFrame])
+		loadingIndicator = " " + string(spinnerFrames[ui.animationFrame])
 	}
 
 	dirDisplay := ui.baseDir
