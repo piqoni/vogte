@@ -43,7 +43,7 @@ If you want to use any of the Claude models, make sure you have setup ANTHROPIC_
 
 How to exit: Either by pressing Ctrl+C or by writing any of these in the message box: "q", "quite" or "exit".
 
-Options:
+TUI-mode options:
 ```
   -agent
     	Start in AGENT mode
@@ -53,6 +53,12 @@ Options:
     	The directory to analyze/apply changes to
   -model string
     	LLM model name (overrides config)
+```
+
+CLI-mode options:
+```
+  -review string
+      Ask the LLM to review uncommitted changes against base branch (default: main). Optionally provide a message after -review to be used as change description.
   -output string
     	The output file (default "vogte-output.txt")
 ```

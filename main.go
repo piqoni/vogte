@@ -17,7 +17,7 @@ func main() {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
-	reviewPtr := flag.Bool("review", false, "Review uncommitted changes against base branch (default: main). Optionally provide a message after -review to be used as change description.")
+	reviewPtr := flag.Bool("review", false, "Ask the LLM to review changes against base branch (default: main). Optionally provide a message after -review to be used as change description.")
 	agentPtr := flag.Bool("agent", false, "Start in AGENT mode")
 	configPtr := flag.String("config", "", "Path to config file. Example: vogte -config config.json ")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
@@ -45,7 +45,6 @@ func main() {
 
 	// Review mode
 	if *reviewPtr {
-		// Collect the optional description from remaining args
 		desc := strings.TrimSpace(strings.Join(flag.Args(), " "))
 		if err := cli.RunReview(application, *outputPtr, "main", desc); err != nil {
 			log.Fatalf("Review error: %v", err)
