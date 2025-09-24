@@ -20,7 +20,7 @@ func New(cfg *config.Config) *Client {
 	return &Client{
 		config: cfg,
 		httpClient: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: 180 * time.Second,
 		},
 		baseDir: ".",
 	}
@@ -191,8 +191,7 @@ CRITICAL REQUIREMENTS:
 8. Consider Go best practices and idiomatic code
 9. Match EXACT indentation and whitespace from the original file
 10. The @@ line should be simple: either just "func functionName() {" or a simple context
-11. Do NOT use complex function signatures like "func (receiver *Type) Name() error {"
-12. If it's a method, just use the method name: "func MethodName() {"
+11. If it's a method, just use the method name: "func MethodName() {"
 
 Working example:
 *** Begin Patch ***
@@ -276,4 +275,61 @@ func (c *Client) ValidateConfig() error {
 	}
 
 	return nil
+}
+
+// ReviewDiff asks the LLM to review a diff and point out potential issues.
+func (c *Client) ReviewDiff(diff, description string) (string, error) {
+	if c.config.LLM.APIKey == "" {
+		return "", fmt.Errorf("LLM API key not configured")
+	}
+
+	desc := strings.TrimSpace(description)
+	if desc == "" {
+		desc = "(no additional description provided)"
+	}
+
+	systemMsg := "You are a senior code reviewer. Be concise, specific, and pragmatic. Focus on correctness, safety, backwards compatibility, tests, performance, security, and idiomatic approaches. When you suggest a change, explain why."
+
+	userPrompt := fmt.Sprintf(`Please review the following uncommitted changes (Git diff) against the base branch.
+
+Change description:
+%s
+
+Diff:
+%s
+
+What to do:
+- Identify potential issues
+- Reference the file and approximate line based on the diff where possible.
+- Provide concrete, actionable suggestions or quick patches when simple.
+- Call out anything that requires additional context or tests.
+
+Output format:
+Summary:
+- One or two sentences summarizing the change and risk profile.
+
+Findings:
+- [Severity: High|Medium|Low] file.go:~line — Short title
+  Explanation: ...
+  Suggestion: ...
+
+Verdict: Ready / Needs attention`, desc, diff)
+
+	messages := []Message{
+		{
+			Role:    "user",
+			Content: userPrompt,
+		},
+	}
+
+	if !isAnthropicModel(c.config.LLM.Model) {
+		messages = append([]Message{{Role: "system", Content: systemMsg}}, messages...)
+	}
+
+	request := ChatRequest{
+		Model:    c.config.LLM.Model,
+		Messages: messages,
+	}
+
+	return c.sendChatRequest(request)
 }

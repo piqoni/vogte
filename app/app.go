@@ -232,3 +232,47 @@ func (a *Application) runSanityCheck() {
 		a.postSystemMessage("go vet passed with no issues.")
 	}
 }
+
+// ReviewDiffAgainstBase collects the diff of uncommitted changes against the given base branch
+// (default "main", with fallback to "master") and asks the LLM to review it.
+func (a *Application) ReviewDiffAgainstBase(baseBranch, description string) (string, error) {
+	diff, err := a.getDiffAgainstBase(baseBranch)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(diff) == "" {
+		return fmt.Sprintf("No uncommitted changes detected against %s.", baseBranch), nil
+	}
+	return a.llm.ReviewDiff(diff, description)
+}
+
+// getDiffAgainstBase returns the git diff (including staged and unstaged changes) against "main" branch.
+// If baseBranch is not found, it falls back to "master".
+func (a *Application) getDiffAgainstBase(baseBranch string) (string, error) {
+	// Helper to run git diff against a branch
+	runDiff := func(branch string) (string, string, error) {
+		cmd := exec.Command("git", "diff", branch, "--")
+		cmd.Dir = a.baseDir
+		var out, errOut bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &errOut
+		err := cmd.Run()
+		return out.String(), errOut.String(), err
+	}
+
+	out, errOut, err := runDiff(baseBranch)
+	if err != nil || strings.Contains(strings.ToLower(errOut), "fatal") {
+		// Fallback to master if main is missing
+		if baseBranch == "main" {
+			out, errOut, err = runDiff("master")
+			if err != nil && strings.TrimSpace(errOut) != "" {
+				return "", fmt.Errorf("git diff error: %s", strings.TrimSpace(errOut))
+			}
+			return out, nil
+		}
+		if err != nil {
+			return "", fmt.Errorf("git diff error: %v", err)
+		}
+	}
+	return out, nil
+}
