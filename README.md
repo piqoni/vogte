@@ -19,12 +19,16 @@ This is an attempt to create a language-specific tool that provides holistic rep
   - When the language is assumed, there is near-zero configuration (for example, if you have OPENAI_API_KEY defined, vogte just works with no configuration)
 
 # Features
+TUI:
  - Holistic repository context ("compressed" AST that helps the LLM decide the best way to tackle the task)
  - Ask/Agent mode (Agent mode means it can apply patches directly - still rough around the edges; AST approach being explored)
  - Runs "Sanity Check" after patching and displays project health 🟢 for instant feedback (currently "go vet ./...", but additional checks will be added eventually)
  - Tested with GPT-4 and Claude Sonnet (but any OpenAI-compatible API should work)
- - CLI mode that can produce holistic context
- - Review your changes against base branch (local PR review by an LLM)
+ - AWS Bedrock support for Anthropic models
+
+ CLI mode:
+  - `vogte -review` to review your changes against base branch (local PR review by an LLM)
+  - `vogte -output` to dump the repository context on a file
 
 # Non-Features
 - Every message is considered a new chat and not related to the previous. The idea is to provide all what is needed in one go; this is also (likely) more cost effective.
@@ -33,7 +37,7 @@ This is an attempt to create a language-specific tool that provides holistic rep
 # How it works
 Vogte uses a two-step approach for providing tasks to the LLM. In the first step, it extracts relevant parts (structs/interfaces/methods along with signatures) from your repository and asks the LLM which files it needs in full to solve the problem expressed by the user. During this step, the LLM returns a list of files, which vogte then provides back with their full content so the LLM can apply the solution.
 
-# Install 
+# Install
 ```
  go install github.com/piqoni/vogte@latest
 ```
