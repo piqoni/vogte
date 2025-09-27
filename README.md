@@ -33,7 +33,7 @@ This is an attempt to create a language-specific tool that provides holistic rep
 # How it works
 Vogte uses a two-step approach for providing tasks to the LLM. In the first step, it extracts relevant parts (structs/interfaces/methods along with signatures) from your repository and asks the LLM which files it needs in full to solve the problem expressed by the user. During this step, the LLM returns a list of files, which vogte then provides back with their full content so the LLM can apply the solution.
 
-# Install       h
+# Install 
 ```
  go install github.com/piqoni/vogte@latest
 ```
