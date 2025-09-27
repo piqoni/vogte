@@ -30,10 +30,6 @@ func New(cfg *config.Config) *Client {
 // 1. First asks which files are needed
 // 2. Then sends full file contents for patching
 func (c *Client) SendMessage(userMessage, projectStructure, mode string) (string, error) {
-	if c.config.LLM.APIKey == "" {
-		return "", fmt.Errorf("LLM API key not configured")
-	}
-
 	// if mode == "ASK" {
 	// 	log.Print("SIMPLE ASK PATH")
 	// 	log.Printf("userMessage: %s, projectStructure: %s", userMessage, projectStructure)
@@ -255,6 +251,12 @@ If the function signature is complex, try using a simpler context or just the li
 // }
 
 func (c *Client) sendChatRequest(request ChatRequest) (string, error) {
+	if err := c.ValidateConfig(); err != nil {
+		return "", err
+	}
+	if isBedrockModel(request.Model) {
+		return c.sendBedrockRequest(request)
+	}
 	if isAnthropicModel(request.Model) || strings.Contains(strings.ToLower(c.config.LLM.Endpoint), "anthropic.com") {
 		return c.sendAnthropicRequest(request)
 	}
@@ -262,16 +264,21 @@ func (c *Client) sendChatRequest(request ChatRequest) (string, error) {
 }
 
 func (c *Client) ValidateConfig() error {
+	if c.config.LLM.Model == "" {
+		return fmt.Errorf("model is required")
+	}
+
+	// Bedrock models don't need API keys or endpoints
+	if isBedrockModel(c.config.LLM.Model) {
+		return nil
+	}
+
 	if c.config.LLM.APIKey == "" {
 		return fmt.Errorf("API key is required")
 	}
 
 	if c.config.LLM.Endpoint == "" {
 		return fmt.Errorf("API endpoint is required")
-	}
-
-	if c.config.LLM.Model == "" {
-		return fmt.Errorf("model is required")
 	}
 
 	return nil

@@ -19,10 +19,15 @@ func (cfg *Config) SetModel(model string) {
 	cfg.ApplyProviderByModel()
 }
 
+// If model starts with "arn:aws:bedrock:", it's a Bedrock model (no API key needed)
 // If model starts with "claude-", it will use Anthropic endpoint and ANTHROPIC_API_KEY
-// Otherwise, it will use OpenAI endpoint and OPENAI_API_KEY (if present).
+// Otherwise, defualt to OpenAI endpoint and OPENAI_API_KEY (if present).
 func (cfg *Config) ApplyProviderByModel() {
-	if strings.HasPrefix(strings.ToLower(cfg.LLM.Model), "claude-") {
+	if strings.HasPrefix(strings.TrimSpace(cfg.LLM.Model), "arn:aws:bedrock:") {
+		// Bedrock models don't need API keys or endpoints
+		cfg.LLM.Endpoint = ""
+		cfg.LLM.APIKey = ""
+	} else if strings.HasPrefix(strings.ToLower(cfg.LLM.Model), "claude-") {
 		cfg.LLM.Endpoint = "https://api.anthropic.com/v1/messages"
 		if k := os.Getenv("ANTHROPIC_API_KEY"); k != "" {
 			cfg.LLM.APIKey = k

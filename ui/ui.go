@@ -142,6 +142,10 @@ func (ui *UI) RefreshStatusBar() {
 		modelDisplay = "-"
 	}
 
+	if len(modelDisplay) > 20 {
+		modelDisplay = modelDisplay[:17] + "..." // chop if name too long (bedrock string)
+	}
+
 	statusText := fmt.Sprintf(
 		"%s Status: %s | Dir: %s | Model: %s | Mode: [\"ask\"]%s[\"ask\"] - [\"agent\"]%s[\"agent\"]",
 		loadingIndicator,
