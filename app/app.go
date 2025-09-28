@@ -246,10 +246,8 @@ func (a *Application) ReviewDiffAgainstBase(baseBranch, description string) (str
 	return a.llm.ReviewDiff(diff, description)
 }
 
-// getDiffAgainstBase returns the git diff (including staged and unstaged changes) against "main" branch.
-// If baseBranch is not found, it falls back to "master".
+// getDiffAgainstBase returns the git diff against the given baseBranch
 func (a *Application) getDiffAgainstBase(baseBranch string) (string, error) {
-	// Helper to run git diff against a branch
 	runDiff := func(branch string) (string, string, error) {
 		cmd := exec.Command("git", "diff", branch, "--")
 		cmd.Dir = a.baseDir
@@ -261,18 +259,8 @@ func (a *Application) getDiffAgainstBase(baseBranch string) (string, error) {
 	}
 
 	out, errOut, err := runDiff(baseBranch)
-	if err != nil || strings.Contains(strings.ToLower(errOut), "fatal") {
-		// Fallback to master if main is missing
-		if baseBranch == "main" {
-			out, errOut, err = runDiff("master")
-			if err != nil && strings.TrimSpace(errOut) != "" {
-				return "", fmt.Errorf("git diff error: %s", strings.TrimSpace(errOut))
-			}
-			return out, nil
-		}
-		if err != nil {
-			return "", fmt.Errorf("git diff error: %v", err)
-		}
+	if err != nil {
+		return "", fmt.Errorf("git diff error: %s", strings.TrimSpace(errOut))
 	}
 	return out, nil
 }
