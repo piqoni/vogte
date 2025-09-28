@@ -34,9 +34,9 @@ func main() {
 		cfg.SetModel(*modelPtr)
 	}
 
-	initialMode := "ASK"
+	initialMode := "AGENT"
 	if *agentPtr {
-		initialMode = "AGENT"
+		initialMode = "ASK"
 	}
 	application := app.New(cfg, *dirPtr, *outputPtr, initialMode)
 
