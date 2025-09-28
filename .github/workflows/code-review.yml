@@ -52,7 +52,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const reviewOutput = `${{ steps.review.outputs.REVIEW_OUTPUT }}`;
+            const reviewOutput = ${{ toJson(steps.review.outputs.REVIEW_OUTPUT) }};
 
             const commentBody = `## 🤖 Vogte Code Review
 
