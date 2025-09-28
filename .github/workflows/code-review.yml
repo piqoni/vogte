@@ -54,7 +54,7 @@ jobs:
           script: |
             const reviewOutput = ${{ toJson(steps.review.outputs.REVIEW_OUTPUT) }};
 
-            const commentBody = `## 🤖 Vogte Code Review
+            const commentBody = `## ∇ Vogte Code Review
 
             ${reviewOutput}
 
