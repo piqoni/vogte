@@ -170,13 +170,13 @@ func (ui *UI) initComponents() {
 				region := added[0]
 				if region == "ask" && ui.currentMode != "ASK" {
 					ui.SetMode("ASK")
-					ui.AppendChatText("\nMode set to ASK")
+					ui.AppendChatText("\n System: Mode set to ASK")
 					if ui.onModeChange != nil {
 						ui.onModeChange("ASK")
 					}
 				} else if region == "agent" && ui.currentMode != "AGENT" {
 					ui.SetMode("AGENT")
-					ui.AppendChatText("\nMode set to AGENT")
+					ui.AppendChatText("\n System: Mode set to AGENT")
 
 					if ui.onModeChange != nil {
 						ui.onModeChange("AGENT")
