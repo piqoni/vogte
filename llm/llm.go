@@ -297,7 +297,7 @@ func (c *Client) ReviewDiff(diff, description string) (string, error) {
 
 	systemMsg := "You are a senior code reviewer. Be concise, specific, and pragmatic. Focus on correctness, safety, backwards compatibility, tests, performance, security, and idiomatic approaches. When you suggest a change, explain why."
 
-	userPrompt := fmt.Sprintf(`Please review the following uncommitted changes (Git diff) against the base branch.
+	userPrompt := fmt.Sprintf(`Please review the following uncommitted changes (Git diff) against the base branch. Review only what's being changed.
 
 Change description:
 %s
@@ -311,7 +311,7 @@ What to do:
 - Provide concrete, actionable suggestions or quick patches when simple.
 - Call out anything that requires additional context or tests.
 
-Output format:
+Output format should be in Markdown syntax and have these sections:
 Summary:
 - One or two sentences summarizing the change and risk profile.
 
