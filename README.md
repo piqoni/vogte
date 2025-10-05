@@ -28,7 +28,7 @@ TUI:
 
  CLI mode:
   - `vogte -review` to review your changes against base branch (local PR review by an LLM)
-  - `vogte -output` to dump the repository context on a file
+  - `vogte -generate-context` to dump the repository context on a file
 
 # Non-Features
 - Every message is considered a new chat and not related to the previous. The idea is to provide all what is needed in one go; this is also (likely) more cost effective.
@@ -64,8 +64,8 @@ CLI-mode options:
 ```
   -review string
       Ask the LLM to review uncommitted changes against base branch (default: main). Optionally provide a message after -review to be used as change description.
-  -output string
-    	The output file (default "vogte-output.txt")
+  -generate-context
+      Generate context file (vogte-context.txt)
 ```
 ## Agent Mode
 When running on agent mode (either by starting vogte with -agent option or clicking on "AGENT) vogte will edit files without approval, so it's expected from the user to use version control to avoid any loss of work.
@@ -73,6 +73,9 @@ When running on agent mode (either by starting vogte with -agent option or click
 # No LLM API? No Problem.
 If you want to generate just the "compressed repository context of your project" so you could use it in LLMs via web ui, you can generate using:
 ```
-vogte -output project_structure.txt
+vogte -generate-context
+
 ```
-(or if you want some other dir pass **-dir dirname** option)
+This command will create a vogte-context.txt in current directory.
+
+If you want to analyze some project residing in some other directory pass **-dir dirname** option.
