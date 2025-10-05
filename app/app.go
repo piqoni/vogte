@@ -137,6 +137,7 @@ func (app *Application) postSystemMessage(message string) {
 	// Schedule the UI update to run on the main UI thread.
 	app.app.QueueUpdateDraw(func() {
 		systemMessage := fmt.Sprintf("\n System: %s", message)
+		// currentText := app.ui.GetChatText()
 		app.ui.AppendChatText(systemMessage)
 	})
 }
@@ -145,6 +146,7 @@ func (app *Application) SetMode(mode string) {
 	if app.Mode != mode {
 		app.Mode = mode
 		app.ui.SetMode(mode)
+		// app.postSystemMessage(fmt.Sprintf("Mode changed to: %s", mode))
 	}
 }
 
