@@ -311,7 +311,9 @@ What to do:
 - Provide concrete, actionable suggestions or quick patches when simple.
 - Call out anything that requires additional context or tests.
 
-Output format should be in Markdown syntax and have these sections:
+Format your response in markdown, with code examples where relevant using appropriate syntax highlighting.
+
+It should have these sections:
 Summary:
 - One or two sentences summarizing the change and risk profile.
 
