@@ -21,7 +21,7 @@ func main() {
 	agentPtr := flag.Bool("agent", false, "Start in AGENT mode")
 	configPtr := flag.String("config", "", "Path to config file. Example: vogte -config config.json ")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
-	outputPtr := flag.String("output", "vogte-output.txt", "The output file")
+	contextPtr := flag.Bool("generate-context", false, "Generate context file (vogte-context.txt)")
 	modelPtr := flag.String("model", "", "LLM model name (overrides config)")
 	flag.Parse()
 
@@ -38,23 +38,22 @@ func main() {
 	if *agentPtr {
 		initialMode = "AGENT"
 	}
-	application := app.New(cfg, *dirPtr, *outputPtr, initialMode)
 
-	outputFlag := flag.Lookup("output")
-	wasOutputPassed := outputFlag.Value.String() != outputFlag.DefValue
+	contextFile := "vogte-context.txt"
+	application := app.New(cfg, *dirPtr, contextFile, initialMode)
 
 	// Review mode
 	if *reviewPtr {
 		desc := strings.TrimSpace(strings.Join(flag.Args(), " "))
-		if err := cli.RunReview(application, *outputPtr, "main", desc); err != nil {
+		if err := cli.RunReview(application, contextFile, "main", desc); err != nil {
 			log.Fatalf("Review error: %v", err)
 		}
 		return
 	}
 
 	// CLI mode
-	if wasOutputPassed {
-		if err := cli.Run(application, *outputPtr); err != nil {
+	if *contextPtr {
+		if err := cli.Run(application, contextFile); err != nil {
 			log.Fatalf("CLI error: %v", err)
 		}
 		return
