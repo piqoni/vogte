@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	pwd, err := os.Getwd()
+	Pwd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
@@ -22,7 +22,7 @@ func main() {
 	configPtr := flag.String("config", "", "Path to config file. Example: vogte -config config.json ")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
 	contextPtr := flag.Bool("generate-context", false, "Generate context file (vogte-context.txt)")
-	modelPtr := flag.String("model", "", "LLM model name (overrides config)")
+	modelPtr := flag.String("m0del", "", "LLM model name (overrides config)")
 	flag.Parse()
 
 	cfg := config.Load(*configPtr)
