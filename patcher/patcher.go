@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+type replaceOperation struct {
+	old string
+	new string
+}
+
 type Patcher struct {
 	baseDir string
 }
@@ -18,11 +23,6 @@ func New(baseDir string) *Patcher {
 }
 
 func (pc *Patcher) ParseAndApply(patchContent string) error {
-
-	// if err := os.WriteFile("debug.log", []byte(patchContent), 0644); err != nil {
-	// fmt.Printf("Error writing to file: %v\n", err)
-	// }
-	// Handle multiple patches in a single response
 	patches := pc.splitPatches(patchContent)
 
 	for i, patch := range patches {
@@ -34,7 +34,6 @@ func (pc *Patcher) ParseAndApply(patchContent string) error {
 	return nil
 }
 
-// splitPatches splits content into individual patches
 func (pc *Patcher) splitPatches(content string) []string {
 	var patches []string
 	lines := strings.Split(content, "\n")
@@ -52,24 +51,28 @@ func (pc *Patcher) splitPatches(content string) []string {
 			}
 			inPatch = true
 			currentPatch.WriteString(line + "\n")
-		} else if strings.HasPrefix(trimmed, "*** End Patch") {
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "*** End Patch") {
 			if inPatch {
 				currentPatch.WriteString(line + "\n")
 				patches = append(patches, currentPatch.String())
 				currentPatch.Reset()
 				inPatch = false
 			}
-		} else if inPatch {
+			continue
+		}
+
+		if inPatch {
 			currentPatch.WriteString(line + "\n")
 		}
 	}
 
-	// Handle case where patch doesn't have proper end marker
 	if inPatch && currentPatch.Len() > 0 {
 		patches = append(patches, currentPatch.String())
 	}
 
-	// If no proper patch format found, treat entire content as one patch
 	if len(patches) == 0 && strings.TrimSpace(content) != "" {
 		patches = append(patches, content)
 	}
@@ -81,240 +84,127 @@ func (pc *Patcher) parseSinglePatch(patchContent string) error {
 	lines := strings.Split(strings.TrimSpace(patchContent), "\n")
 
 	var filename string
-	var context string
-	var removals []string
-	var additions []string
+	var addFileContent []string
+	var replaceOps []replaceOperation
 	var isAddFile bool
 
-	i := 0
-	for i < len(lines) {
+	for i := 0; i < len(lines); {
 		line := strings.TrimSpace(lines[i])
 
-		if strings.HasPrefix(line, "*** Begin Patch") {
+		switch {
+		case strings.HasPrefix(line, "*** Begin Patch"):
 			i++
-			continue
-		}
-
-		if strings.HasPrefix(line, "*** Update File:") || strings.HasPrefix(line, "*** Add File:") {
-			// Extract filename
+		case strings.HasPrefix(line, "*** Update File:") || strings.HasPrefix(line, "*** Add File:"):
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) != 2 {
 				return fmt.Errorf("invalid file specification: %s", line)
 			}
-			filename = strings.TrimSpace(strings.TrimRight(parts[1], " ***"))
-			// filename = strings.TrimSpace(parts[1])
+
+			filename = strings.TrimSpace(strings.TrimRight(parts[1], " *"))
 			isAddFile = strings.HasPrefix(line, "*** Add File:")
 			i++
 
-			// If it's an Add File patch, collect content until End Patch
 			if isAddFile {
 				for i < len(lines) {
-					changeLine := lines[i]
-					trimmedChange := strings.TrimSpace(changeLine)
-
-					if strings.HasPrefix(trimmedChange, "*** End Patch") {
+					trimmed := strings.TrimSpace(lines[i])
+					if strings.HasPrefix(trimmed, "*** End Patch") {
 						break
 					}
 
-					// Some models might include a stray @@ line; ignore it for add-file
-					if strings.HasPrefix(trimmedChange, "@@") {
-						i++
-						continue
-					}
-
-					// Prefer + prefixed lines, but also accept raw lines
-					if strings.HasPrefix(changeLine, "+") {
-						additions = append(additions, changeLine[1:])
-					} else if strings.HasPrefix(changeLine, "-") {
-						// ignore removals for Add File blocks
+					contentLine := lines[i]
+					if strings.HasPrefix(contentLine, "+") {
+						addFileContent = append(addFileContent, contentLine[1:])
 					} else {
-						// treat as literal content line
-						additions = append(additions, changeLine)
+						addFileContent = append(addFileContent, contentLine)
 					}
 					i++
 				}
-				if filename == "" {
-					return fmt.Errorf("no filename specified in patch")
-				}
-
-				return pc.applyPatch(filename, "", nil, additions)
 			}
-			continue
-		}
-
-		if strings.HasPrefix(line, "@@") {
-			// Extract context (everything after @@)
-			context = strings.TrimSpace(line[2:])
+		case strings.HasPrefix(line, "*** Replace ***"):
+			op, next, err := pc.parseReplaceBlock(lines, i+1)
+			if err != nil {
+				return err
+			}
+			replaceOps = append(replaceOps, op)
+			i = next
+		case strings.HasPrefix(line, "*** End Patch"):
+			i = len(lines)
+		default:
 			i++
-
-			// Parse the changes
-			for i < len(lines) {
-				changeLine := lines[i]
-				trimmedChange := strings.TrimSpace(changeLine)
-
-				if strings.HasPrefix(trimmedChange, "*** End Patch") {
-					break
-				}
-
-				if strings.HasPrefix(changeLine, "-") {
-					// Removal line - preserve original indentation
-					removals = append(removals, changeLine[1:])
-				} else if strings.HasPrefix(changeLine, "+") {
-					// Addition line - preserve original indentation
-					additions = append(additions, changeLine[1:])
-
-				}
-				i++
-			}
-			break
 		}
-		i++
 	}
 
 	if filename == "" {
 		return fmt.Errorf("no filename specified in patch")
 	}
 
-	return pc.applyPatch(filename, context, removals, additions)
+	if isAddFile {
+		return pc.writeFile(filename, strings.Join(addFileContent, "\n"))
+	}
+
+	if len(replaceOps) == 0 {
+		return fmt.Errorf("no replace operations specified for %s", filename)
+	}
+
+	return pc.applyReplacements(filename, replaceOps)
 }
 
-func (pc *Patcher) applyPatch(filename, context string, removals, additions []string) error {
+func (pc *Patcher) parseReplaceBlock(lines []string, start int) (replaceOperation, int, error) {
+	if start >= len(lines) || !hasMarker(lines[start], "*** Old ***") {
+		return replaceOperation{}, start, fmt.Errorf("replace block missing *** Old *** marker")
+	}
+
+	oldText, next, err := pc.collectBlock(lines, start+1, "*** New ***")
+	if err != nil {
+		return replaceOperation{}, start, err
+	}
+
+	newText, next, err := pc.collectBlock(lines, next+1, "*** Replace ***", "*** End Patch")
+	if err != nil {
+		return replaceOperation{}, start, err
+	}
+
+	return replaceOperation{old: oldText, new: newText}, next, nil
+}
+
+func (pc *Patcher) collectBlock(lines []string, start int, terminators ...string) (string, int, error) {
+	var block []string
+
+	for i := start; i < len(lines); i++ {
+		for _, terminator := range terminators {
+			if hasMarker(lines[i], terminator) {
+				return strings.Join(block, "\n"), i, nil
+			}
+		}
+		block = append(block, lines[i])
+	}
+
+	return "", start, fmt.Errorf("unterminated block, expected one of %s", strings.Join(terminators, ", "))
+}
+
+func (pc *Patcher) applyReplacements(filename string, replaceOps []replaceOperation) error {
 	filePath := filepath.Join(pc.baseDir, filename)
 
-	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %w", filePath, err)
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	var content []byte
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		content = []byte{}
-	} else {
-		content, err = os.ReadFile(filePath)
-		if err != nil {
-			return fmt.Errorf("failed to read file %s: %w", filePath, err)
+	updated := string(content)
+	for _, op := range replaceOps {
+		if op.old == "" {
+			return fmt.Errorf("replace operation for %s has empty old text", filename)
 		}
-	}
-
-	lines := strings.Split(string(content), "\n")
-
-	// Handle empty file case
-	if len(lines) == 1 && lines[0] == "" {
-		lines = []string{}
-	}
-
-	var newLines []string
-
-	// If no context specified and file is empty, just add all additions
-	if context == "" && len(lines) == 0 {
-		newLines = additions
-	} else if context == "" {
-		// No context specified, apply changes to end of file
-		newLines = make([]string, len(lines))
-		copy(newLines, lines)
-
-		if len(removals) > 0 {
-			// Try to find and remove the lines from the end
-			if len(newLines) >= len(removals) {
-				match := true
-				startIdx := len(newLines) - len(removals)
-				for j, removal := range removals {
-					if newLines[startIdx+j] != removal {
-						match = false
-						break
-					}
-				}
-				if match {
-					newLines = newLines[:startIdx]
-				}
-			}
+		if !strings.Contains(updated, op.old) {
+			return fmt.Errorf("old text not found in %s", filename)
 		}
-
-		newLines = append(newLines, additions...)
-	} else {
-		// Find the context line
-		contextIndex := pc.findContextLine(lines, context)
-		if contextIndex == -1 {
-			return fmt.Errorf("context not found: %s", context)
-		}
-
-		// if err := os.WriteFile("debug2.log", []byte(strconv.Itoa(contextIndex)), 0644); err != nil {
-		// fmt.Printf("Error writing to file: %v\n", err)
-		// }
-
-		newLines = pc.applyChangesAfterContext(lines, contextIndex, removals, additions)
+		updated = strings.Replace(updated, op.old, op.new, 1)
 	}
 
-	// Write the modified content back to the file
-	newContent := strings.Join(newLines, "\n")
-	if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", filePath, err)
-	}
-
-	return nil
+	return pc.writeFile(filename, updated)
 }
 
-func (pc *Patcher) findContextLine(lines []string, context string) int {
-	for i, line := range lines {
-		if strings.Contains(line, context) {
-			return i
-		}
-	}
-	return -1
-}
-
-// applyChangesAfterContext applies removals and additions after the context line
-func (pc *Patcher) applyChangesAfterContext(lines []string, contextIndex int, removals, additions []string) []string {
-	if len(removals) > 0 {
-		// Find and replace the removal lines
-		startIdx := pc.findRemovalStart(lines, contextIndex, removals)
-		if startIdx == -1 {
-			// If exact match not found, insert additions after context
-			newLines := make([]string, 0, len(lines)+len(additions))
-			newLines = append(newLines, lines[:contextIndex+1]...)
-			newLines = append(newLines, additions...)
-			newLines = append(newLines, lines[contextIndex+1:]...)
-			return newLines
-		}
-
-		// Remove the old lines and insert new ones
-		newLines := make([]string, 0, len(lines)-len(removals)+len(additions))
-		newLines = append(newLines, lines[:startIdx]...)
-		newLines = append(newLines, additions...)
-		newLines = append(newLines, lines[startIdx+len(removals):]...)
-
-		return newLines
-	} else if len(additions) > 0 {
-		// Only additions, insert after context
-		newLines := make([]string, 0, len(lines)+len(additions))
-		newLines = append(newLines, lines[:contextIndex+1]...)
-		newLines = append(newLines, additions...)
-		newLines = append(newLines, lines[contextIndex+1:]...)
-
-		return newLines
-	}
-
-	return lines
-}
-
-// findRemovalStart finds where the removal pattern starts after the context
-func (pc *Patcher) findRemovalStart(lines []string, contextIndex int, removals []string) int {
-	for i := contextIndex + 1; i <= len(lines)-len(removals); i++ {
-		match := true
-		for j, removal := range removals {
-			if i+j >= len(lines) || lines[i+j] != removal {
-				match = false
-				break
-			}
-		}
-		if match {
-			return i
-		}
-	}
-	return -1
-}
-
-// CreateNewFile creates a new file with the given content
-func (pc *Patcher) CreateNewFile(filename, content string) error {
+func (pc *Patcher) writeFile(filename, content string) error {
 	filePath := filepath.Join(pc.baseDir, filename)
 
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
@@ -322,8 +212,16 @@ func (pc *Patcher) CreateNewFile(filename, content string) error {
 	}
 
 	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+		return fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}
 
 	return nil
+}
+
+func (pc *Patcher) CreateNewFile(filename, content string) error {
+	return pc.writeFile(filename, content)
+}
+
+func hasMarker(line, marker string) bool {
+	return strings.HasPrefix(strings.TrimSpace(line), marker)
 }

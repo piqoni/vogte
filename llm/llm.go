@@ -152,18 +152,36 @@ Full File Contents:
 	}
 
 	promptBuilder.WriteString(`
-Please generate a patch to complete the requested task. Use this EXACT format:
+Please generate a patch to complete the requested task. Use this EXACT format.
+
+For existing files, use string replacement blocks with exact old/new text:
 
 *** Begin Patch ***
 *** Update File: filename.go ***
-@@ context line that helps locate where changes should be made @@
--old line to remove
--another old line to remove
-+new line to add
-+another new line to add
+*** Replace ***
+*** Old ***
+fmt.Println("Hello")
+*** New ***
+fmt.Println("Hello, World!")
 *** End Patch ***
 
-To create a new file, use this format (no @@ line):
+You can include multiple replacement blocks in the same file patch:
+
+*** Begin Patch ***
+*** Update File: filename.go ***
+*** Replace ***
+*** Old ***
+old text
+*** New ***
+new text
+*** Replace ***
+*** Old ***
+another old text
+*** New ***
+another new text
+*** End Patch ***
+
+To create a new file, use this format:
 
 *** Begin Patch ***
 *** Add File: path/to/newfile.go ***
@@ -178,26 +196,26 @@ To create a new file, use this format (no @@ line):
 
 CRITICAL REQUIREMENTS:
 1. Always provide the exact file path relative to the project root
-2. Use context lines to help locate where changes should be made
-3. For new files, use "*** Add File: <path> ***" and omit the @@ context line and removal lines
-4. Preserve indentation and formatting
-5. Only modify what's necessary to fulfill the request
-6. If creating new files, start with appropriate package declaration
-7. Ensure all imports are properly handled
-8. Consider Go best practices and idiomatic code
-9. Match EXACT indentation and whitespace from the original file
-10. The @@ line should be simple: either just "func functionName() {" or a simple context
-11. If it's a method, just use the method name: "func MethodName() {"
+2. In "*** Old ***", include the exact existing text to replace, matching whitespace exactly
+3. In "*** New ***", include the exact replacement text
+4. To remove text, keep "*** New ***" empty
+5. To insert text, replace a nearby anchor with anchor-plus-new-content
+6. For new files, use "*** Add File: <path> ***"
+7. Preserve indentation and formatting
+8. Only modify what's necessary to fulfill the request
+9. If creating new files, start with appropriate package declaration
+10. Ensure all imports are properly handled
+11. Consider Go best practices and idiomatic code
 
 Working example:
 *** Begin Patch ***
 *** Update File: main.go ***
-@@ func main() {
-- fmt.Println("Hello")
-+ fmt.Println("Hello, World!")
-*** End Patch ***
-
-If the function signature is complex, try using a simpler context or just the line content itself.`)
+*** Replace ***
+*** Old ***
+fmt.Println("Hello")
+*** New ***
+fmt.Println("Hello, World!")
+*** End Patch ***`)
 
 	messages := []Message{
 		{
