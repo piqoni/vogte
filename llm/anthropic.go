@@ -13,6 +13,7 @@ import (
 // Anthropic Messages API structures
 type anthropicChatRequest struct {
 	Model       string    `json:"model"`
+	System      string    `json:"system,omitempty"`
 	Messages    []Message `json:"messages"`
 	MaxTokens   int       `json:"max_tokens"`
 	Temperature float64   `json:"temperature,omitempty"`
@@ -59,9 +60,21 @@ func (c *Client) sendAnthropicRequest(request ChatRequest) (string, error) {
 	if maxTokens == 0 {
 		maxTokens = 1024
 	}
+
+	var systemPrompt string
+	var messages []Message
+	for _, message := range request.Messages {
+		if message.Role == "system" {
+			systemPrompt = message.Content
+			continue
+		}
+		messages = append(messages, message)
+	}
+
 	anthReq := anthropicChatRequest{
 		Model:       request.Model,
-		Messages:    request.Messages,
+		System:      systemPrompt,
+		Messages:    messages,
 		MaxTokens:   maxTokens,
 		Temperature: request.Temperature,
 	}

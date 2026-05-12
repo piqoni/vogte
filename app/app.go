@@ -47,6 +47,7 @@ func New(cfg *config.Config, baseDir string, outputFile string, mode string) *Ap
 		state:      ui.StateUnknown,
 		stateCh:    make(chan ui.ProjectState, 1),
 	}
+	app.llm.SetBaseDir(baseDir)
 	app.ui = ui.New(app.app, app.messageHandler)
 	app.ui.SetModeChangeCallback(app.modeChangeHandler)
 	app.ui.SetMode(app.Mode)
@@ -154,6 +155,14 @@ func (app *Application) GetMode() string {
 
 func (a *Application) Parse() (string, error) {
 	return a.parser.ParseProject(a.baseDir)
+}
+
+func (a *Application) LLMClient() *llm.Client {
+	return a.llm
+}
+
+func (a *Application) Parser() *parser.Parser {
+	return a.parser
 }
 
 func (a *Application) stateMonitor() {

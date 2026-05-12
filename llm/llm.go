@@ -26,6 +26,18 @@ func New(cfg *config.Config) *Client {
 	}
 }
 
+func (c *Client) Config() *config.Config {
+	return c.config
+}
+
+func (c *Client) SetBaseDir(baseDir string) {
+	c.baseDir = baseDir
+}
+
+func (c *Client) BaseDir() string {
+	return c.baseDir
+}
+
 // SendMessage sends a message to the LLM using a two-step approach:
 // 1. First asks which files are needed
 // 2. Then sends full file contents for patching
@@ -47,13 +59,43 @@ func (c *Client) SendMessage(userMessage, projectStructure, mode string) (string
 	// return "", fmt.Errorf("first step didnt return any file from the llm, inspect your user prompt")
 	// }
 	// Step 2: Get full content of required files
-	fullFiles, err := c.getFileContents(fileList)
+	fullFiles, err := c.getFileContentsFromBase(c.baseDir, fileList)
 	if err != nil {
 		return "", fmt.Errorf("error reading file contents: %w", err)
 	}
 
 	// Step 3: Request patch with full file contents
 	return c.requestPatch(userMessage, fullFiles)
+}
+
+func (c *Client) SendInlineMessage(systemPrompt, userMessage string) (string, error) {
+	messages := []Message{}
+	if strings.TrimSpace(systemPrompt) != "" {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: systemPrompt,
+		})
+	}
+	messages = append(messages, Message{
+		Role:    "user",
+		Content: userMessage,
+	})
+
+	request := ChatRequest{
+		Model:               c.config.LLM.Model,
+		Messages:            messages,
+		MaxCompletionTokens: 1200,
+	}
+
+	return c.sendChatRequest(request)
+}
+
+func (c *Client) AskForRequiredFiles(task, blueprint string) ([]string, error) {
+	return c.askForRequiredFiles(task, blueprint)
+}
+
+func (c *Client) GetFileContents(baseDir string, fileList []string) (map[string]string, error) {
+	return c.getFileContentsFromBase(baseDir, fileList)
 }
 
 // askForRequiredFiles asks the LLM which files it needs to see in full
@@ -111,7 +153,7 @@ Example response: main.go,utils/helper.go,models/user.go`, task, blueprint)
 }
 
 // getFileContents reads the full content of specified files
-func (c *Client) getFileContents(fileList []string) (map[string]string, error) {
+func (c *Client) getFileContentsFromBase(baseDir string, fileList []string) (map[string]string, error) {
 	contents := make(map[string]string)
 
 	for _, file := range fileList {
@@ -124,7 +166,7 @@ func (c *Client) getFileContents(fileList []string) (map[string]string, error) {
 		if strings.HasPrefix(file, "/") {
 			fullPath = file // Absolute path
 		} else {
-			fullPath = fmt.Sprintf("%s/%s", c.baseDir, file) // Relative to baseDir
+			fullPath = fmt.Sprintf("%s/%s", baseDir, file) // Relative to baseDir
 		}
 
 		content, err := os.ReadFile(fullPath)

@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/piqoni/vogte/app"
+	"github.com/piqoni/vogte/watcher"
 )
 
 func Run(application *app.Application, outputPath string) error {
@@ -35,4 +38,45 @@ func RunReview(application *app.Application, outputPath, baseBranch, description
 		}
 	}
 	return nil
+}
+
+func RunWatch(ctx context.Context, application *app.Application) error {
+	cfg := application.LLMClient().Config()
+	if len(cfg.Watch.Dirs) == 0 {
+		return fmt.Errorf("watch mode requires at least one directory in config.watch.dirs")
+	}
+
+	dirs := make([]string, 0, len(cfg.Watch.Dirs))
+	for _, dir := range cfg.Watch.Dirs {
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			return fmt.Errorf("resolve watch dir %q: %w", dir, err)
+		}
+		dirs = append(dirs, absDir)
+	}
+
+	debounceMs := cfg.Watch.DebounceMs
+	if debounceMs <= 0 {
+		debounceMs = 500
+	}
+
+	watchCfg := watcher.Config{
+		Dirs:           dirs,
+		DebounceMs:     debounceMs,
+		TriggerKeyword: "@vogte",
+		EndMarker:      "/v/",
+	}
+
+	responder := watcher.NewResponder(application.LLMClient(), application.Parser(), watchCfg)
+	w, err := watcher.New(watchCfg, responder)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("watch mode started\n")
+	fmt.Printf("watching: %v\n", dirs)
+	fmt.Printf("trigger: %s\n", watchCfg.TriggerKeyword)
+	fmt.Printf("end marker: %s\n", watchCfg.EndMarker)
+
+	return w.Run(ctx)
 }

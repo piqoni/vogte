@@ -12,6 +12,10 @@ type Config struct {
 		Model    string `json:"model"`
 		Endpoint string `json:"endpoint"`
 	} `json:"llm"`
+	Watch struct {
+		Dirs       []string `json:"dirs"`
+		DebounceMs int      `json:"debounce_ms"`
+	} `json:"watch"`
 }
 
 func (cfg *Config) SetModel(model string) {

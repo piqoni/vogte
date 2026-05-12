@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/piqoni/vogte/app"
 	"github.com/piqoni/vogte/cli"
@@ -19,6 +22,8 @@ func main() {
 
 	reviewPtr := flag.Bool("review", false, "Ask the LLM to review changes against base branch (default: main). Optionally provide a message after -review to be used as change description.")
 	agentPtr := flag.Bool("agent", false, "Start in AGENT mode")
+	watchPtr := flag.Bool("watch", false, "Start headless watch mode")
+	watchShortPtr := flag.Bool("w", false, "Start headless watch mode")
 	configPtr := flag.String("config", "", "Path to config file. Example: vogte -config config.json ")
 	dirPtr := flag.String("dir", pwd, "The directory to analyze")
 	contextPtr := flag.Bool("generate-context", false, "Generate context file (vogte-context.txt)")
@@ -47,6 +52,16 @@ func main() {
 		desc := strings.TrimSpace(strings.Join(flag.Args(), " "))
 		if err := cli.RunReview(application, contextFile, "main", desc); err != nil {
 			log.Fatalf("Review error: %v", err)
+		}
+		return
+	}
+
+	if *watchPtr || *watchShortPtr {
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancel()
+
+		if err := cli.RunWatch(ctx, application); err != nil {
+			log.Fatalf("Watch error: %v", err)
 		}
 		return
 	}
